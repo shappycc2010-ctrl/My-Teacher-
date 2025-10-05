@@ -3,8 +3,8 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import mongoose from "mongoose";
-import aiRoutes from "./routes/ai.js";
-import paymentRoutes from "./routes/payment.js";
+import aiRouter from "./ai.js";
+import paymentRouter from "./payment.js";
 
 dotenv.config();
 const app = express();
