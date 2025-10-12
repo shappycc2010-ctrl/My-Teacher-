@@ -1,22 +1,19 @@
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import aiRouter from "./ai.js"; // ✅ import the router correctly
+import aiRouter from "./ai.js";  // ✅ Import your router properly
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// Routes
-app.use("/", aiRouter); // ✅ mount AI routes properly
+// ✅ Use the router as middleware
+app.use("/", aiRouter);
 
-// Health check
 app.get("/", (req, res) => {
-  res.send("✅ Mr. Kelly AI server is running smoothly!");
+  res.send("✅ Mr. Kelly AI server is running fine!");
 });
 
-// Port setup
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Mr. Kelly AI server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
