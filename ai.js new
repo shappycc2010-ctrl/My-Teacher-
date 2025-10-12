@@ -1,18 +1,24 @@
+import express from "express";
 import OpenAI from "openai";
 
-const keys = [
-  process.env.OPENAI_API_KEY,        // main key
-  process.env.OPENAI_KEY_2,
-  process.env.OPENAI_KEY_3,
-  process.env.OPENAI_KEY_4
-].filter(Boolean);
+const router = express.Router();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-if (keys.length === 0) {
-  throw new Error("No OpenAI API keys found.");
-}
+router.post("/api/chat", async (req, res) => {
+  try {
+    const { message, studentName } = req.body;
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher." },
+        { role: "user", content: `${studentName}: ${message}` }
+      ]
+    });
+    res.json({ reply: completion.choices[0].message.content });
+  } catch (err) {
+    console.error("AI Error:", err);
+    res.status(500).json({ error: "Something went wrong with the AI." });
+  }
+});
 
-const randomKey = keys[Math.floor(Math.random() * keys.length)];
-
-const openai = new OpenAI({ apiKey: randomKey });
-
-export default openai;
+export default router;
