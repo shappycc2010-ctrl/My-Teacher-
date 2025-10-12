@@ -1,0 +1,18 @@
+import OpenAI from "openai";
+
+const keys = [
+  process.env.OPENAI_API_KEY,        // main key
+  process.env.OPENAI_KEY_2,
+  process.env.OPENAI_KEY_3,
+  process.env.OPENAI_KEY_4
+].filter(Boolean);
+
+if (keys.length === 0) {
+  throw new Error("No OpenAI API keys found.");
+}
+
+const randomKey = keys[Math.floor(Math.random() * keys.length)];
+
+const openai = new OpenAI({ apiKey: randomKey });
+
+export default openai;
