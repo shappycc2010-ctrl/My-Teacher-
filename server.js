@@ -1,18 +1,17 @@
-
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const aiRouter = require("./ai.js");
-const paymentRouter = require("./payment.js");
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
+import aiRouter from "./ai.js";
 
 const app = express();
+
 app.use(cors());
 app.use(bodyParser.json());
+app.use("/", aiRouter);
 
-app.use("/api/ai", aiRouter);
-app.use("/api/payment", paymentRouter);
+app.get("/", (req, res) => {
+  res.send("✅ Mr. Kelly AI server is running fine!");
+});
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`✅ Mr. Kelly is awake on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
