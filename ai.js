@@ -13,7 +13,7 @@ router.post("/api/chat", async (req, res) => {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher who helps students." },
+        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher." },
         { role: "user", content: `${studentName}: ${message}` },
       ],
     });
