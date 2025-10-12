@@ -1,54 +1,22 @@
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import OpenAI from "openai";
+import aiRouter from "./ai.js"; // ✅ import the router correctly
 
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-const PORT = process.env.PORT || 10000;
+// Routes
+app.use("/", aiRouter); // ✅ mount AI routes properly
 
-// ✅ Initialize OpenAI correctly
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// ✅ Root route
+// Health check
 app.get("/", (req, res) => {
-  res.send("✅ Mr. Kelly AI Teacher server is live and teaching!");
+  res.send("✅ Mr. Kelly AI server is running smoothly!");
 });
 
-// ✅ Chat route
-app.post("/api/chat", async (req, res) => {
-  try {
-    const { message, studentName } = req.body;
-
-    if (!message || !studentName) {
-      return res.status(400).json({ error: "Missing message or student name." });
-    }
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are Mr. Kelly, a professional AI teacher who runs the My Teacher platform.
-          You teach web development and AI creation. Be friendly, clear, and supportive. 
-          Never give homework answers until submission.`
-        },
-        { role: "user", content: `${studentName}: ${message}` }
-      ]
-    });
-
-    res.json({ reply: completion.choices[0].message.content });
-  } catch (error) {
-    console.error("❌ Error:", error);
-    res.status(500).json({ error: "An error occurred while processing your request." });
-  }
-});
-
-// ✅ Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Mr. Kelly AI Teacher running on port ${PORT}`);
-});
+// Port setup
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Mr. Kelly AI server running on port ${PORT}`));
