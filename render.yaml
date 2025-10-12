@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: my-teacher
+    env: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: PORT
+        value: 10000
+      - key: ADMIN_KEY
+        value: myteacher2025secret
