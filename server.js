@@ -1,11 +1,14 @@
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import aiRouter from "./ai.js";
+import aiRouter from "./ai.js"; // ✅ Correct import
 
 const app = express();
+
 app.use(cors());
 app.use(bodyParser.json());
+
+// ✅ Use the router properly
 app.use("/", aiRouter);
 
 app.get("/", (req, res) => {
