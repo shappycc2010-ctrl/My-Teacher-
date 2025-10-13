@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mr. Kelly AI Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .chat-box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 500px;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background: #22c55e;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #16a34a;
+    }
+    .reply {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f3f4f6;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-box">
+    <h2>🤖 Mr. Kelly AI</h2>
+    <input id="studentName" type="text" placeholder="Your name" />
+    <textarea id="message" rows="3" placeholder="Ask Mr. Kelly a question..."></textarea>
+    <button onclick="sendMessage()">Send</button>
+    <div id="reply" class="reply"></div>
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const studentName = document.getElementById("studentName").value;
+      const message = document.getElementById("message").value;
+      const replyBox = document.getElementById("reply");
+
+      replyBox.textContent = "⏳ Thinking...";
+
+      try {
+        const res = await fetch("https://my-teacher-1.onrender.com/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studentName, message }),
+        });
+        const data = await res.json();
+        replyBox.textContent = "💬 " + data.reply;
+      } catch (err) {
+        replyBox.textContent = "❌ Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+  </html>
