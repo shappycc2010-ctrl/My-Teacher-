@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mr. Kelly - AI Teacher</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8fafc;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .chat-box {
+      width: 90%;
+      max-width: 600px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .reply {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-box">
+    <h2>👨‍🏫 Talk with Mr. Kelly</h2>
+    <input id="name" placeholder="Enter your name" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;" />
+    <textarea id="message" placeholder="Type your question..."></textarea>
+    <button onclick="sendMessage()">Send</button>
+    <div id="reply" class="reply"></div>
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const studentName = document.getElementById('name').value || 'Student';
+      const message = document.getElementById('message').value;
+      const replyBox = document.getElementById('reply');
+      
+      replyBox.textContent = "Thinking...";
+      
+      const res = await fetch('https://my-teacher-1.onrender.com/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentName, message })
+      });
+      
+      const data = await res.json();
+      replyBox.textContent = data.reply || "No response received.";
+    }
+  </script>
+</body>
+</html>
