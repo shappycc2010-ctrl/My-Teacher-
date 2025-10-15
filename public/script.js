@@ -8,6 +8,9 @@ const clearBtn = document.getElementById("clearBtn");
 const studentNameInput = document.getElementById("studentName");
 const modeSelect = document.getElementById("mode");
 const statusDiv = document.getElementById("status");
+const classBody = document.getElementById("classBody");
+
+let students = {};
 
 // 🎤 Setup Speech Recognition
 let recognition;
@@ -22,26 +25,21 @@ if ("webkitSpeechRecognition" in window) {
     input.value = transcript;
     sendMessage();
   };
-
-  recognition.onerror = (e) => {
-    statusDiv.textContent = "⚠️ Voice input error: " + e.error;
-  };
-} else {
-  console.warn("Speech recognition not supported in this browser.");
 }
 
 // 🔊 Text-to-Speech
 function speak(text) {
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.voice = speechSynthesis
-    .getVoices()
-    .find((v) => v.name.includes("Google UK English Male")) || null;
+  utterance.voice =
+    speechSynthesis
+      .getVoices()
+      .find((v) => v.name.includes("Google UK English Male")) || null;
   utterance.rate = 1.05;
   utterance.pitch = 1;
   speechSynthesis.speak(utterance);
 }
 
-// 🧩 Utility to add chat messages
+// 🧩 Add Chat Messages
 function addMessage(sender, text) {
   const msg = document.createElement("div");
   msg.classList.add("msg", sender);
@@ -50,7 +48,38 @@ function addMessage(sender, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-// 🧠 Send Message to Backend
+// 📊 Update Dashboard
+function updateDashboard(name, score = null) {
+  if (!students[name]) {
+    students[name] = { messages: 0, scores: [], lastSeen: new Date() };
+  }
+  students[name].messages++;
+  students[name].lastSeen = new Date();
+  if (score !== null) students[name].scores.push(score);
+
+  const avg =
+    students[name].scores.length > 0
+      ? (
+          students[name].scores.reduce((a, b) => a + b, 0) /
+          students[name].scores.length
+        ).toFixed(1)
+      : "—";
+
+  // Render dashboard table
+  classBody.innerHTML = Object.entries(students)
+    .map(
+      ([n, s]) => `
+      <tr>
+        <td class="p-2 font-medium">${n}</td>
+        <td class="p-2">${s.messages}</td>
+        <td class="p-2">${avg}</td>
+        <td class="p-2">${s.lastSeen.toLocaleTimeString()}</td>
+      </tr>`
+    )
+    .join("");
+}
+
+// 🧠 Send Message to AI
 async function sendMessage() {
   const studentName = studentNameInput.value.trim() || "Student";
   const message = input.value.trim();
@@ -58,6 +87,7 @@ async function sendMessage() {
   if (!message) return;
 
   addMessage("user", `${studentName}: ${message}`);
+  updateDashboard(studentName);
   input.value = "";
   statusDiv.textContent = "🤖 Thinking...";
 
@@ -75,29 +105,28 @@ async function sendMessage() {
     statusDiv.textContent = "✅ Ready";
   } catch (err) {
     console.error(err);
-    statusDiv.textContent = "❌ Error connecting to Mr. Kelly";
+    statusDiv.textContent = "❌ Connection error";
   }
 }
 
-// 📘 Homework Submission Simulation
+// 📘 Simulate Homework Submission
 submitBtn.addEventListener("click", () => {
+  const studentName = studentNameInput.value.trim() || "Student";
   const score = Math.floor(Math.random() * 40) + 60;
   const message = `Your homework has been submitted! Score: ${score}/100`;
   addMessage("ai", message);
   speak(message);
+  updateDashboard(studentName, score);
 });
 
-// 💬 Event Listeners
+// 💬 Chat Events
 sendBtn.addEventListener("click", sendMessage);
 input.addEventListener("keypress", (e) => {
   if (e.key === "Enter") sendMessage();
 });
+clearBtn.addEventListener("click", () => (chat.innerHTML = ""));
 
-clearBtn.addEventListener("click", () => {
-  chat.innerHTML = "";
-});
-
-// 🎤 Long-press Send button to activate voice input
+// 🎤 Long press send button for voice input
 sendBtn.addEventListener("mousedown", () => {
   if (recognition) {
     statusDiv.textContent = "🎙️ Listening...";
