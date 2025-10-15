@@ -1,80 +1,82 @@
-import express from "express";
-import OpenAI from "openai";
+// === Phase 7: Memory & Progress Tracking ===
+import fs from "fs";
 
-const router = express.Router();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const MEMORY_FILE = "./student_memory.json";
 
-// === Existing chat route ===
-router.post("/api/chat", async (req, res) => {
+// Helper functions
+function loadMemory() {
+  if (!fs.existsSync(MEMORY_FILE)) return {};
   try {
-    const { message, studentName } = req.body;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher who helps students." },
-        { role: "user", content: `${studentName}: ${message}` },
-      ],
-    });
-
-    res.json({ reply: completion.choices[0].message.content });
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "Something went wrong with the AI." });
+    return JSON.parse(fs.readFileSync(MEMORY_FILE, "utf8"));
+  } catch {
+    return {};
   }
-});
+}
+function saveMemory(data) {
+  fs.writeFileSync(MEMORY_FILE, JSON.stringify(data, null, 2));
+}
 
-// === New: Start Quiz ===
-router.post("/api/quiz/start", async (req, res) => {
+// === Memory-based chat ===
+router.post("/api/chat-memory", async (req, res) => {
   try {
-    const { studentName, subject } = req.body;
+    const { studentName, message } = req.body;
+    const memory = loadMemory();
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are Mr. Kelly, a helpful teacher. 
-          Create a 5-question quiz for the subject "${subject}". 
-          Each question should be numbered, with 4 options (A–D). 
-          Keep it concise and interesting. Do not include answers.`,
-        },
-        { role: "user", content: `${studentName} is ready for a quiz on ${subject}.` },
-      ],
-    });
+    if (!memory[studentName]) {
+      memory[studentName] = { history: [], quizzes: [] };
+    }
 
-    res.json({ quiz: completion.choices[0].message.content });
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "Failed to generate quiz." });
-  }
-});
+    memory[studentName].history.push({ role: "user", content: message });
+    if (memory[studentName].history.length > 10)
+      memory[studentName].history = memory[studentName].history.slice(-10);
 
-// === New: Grade Answer ===
-router.post("/api/quiz/answer", async (req, res) => {
-  try {
-    const { studentName, question, answer } = req.body;
+    const context = memory[studentName].history
+      .map((h) => `${h.role === "user" ? studentName : "Mr. Kelly"}: ${h.content}`)
+      .join("\n");
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content:
-            "You are Mr. Kelly, a patient AI teacher. Grade the student’s quiz answer, tell if it’s correct or wrong, give the correct answer, and a short explanation.",
+          content: `You are Mr. Kelly, an encouraging teacher who remembers students’ progress.
+When talking to ${studentName}, recall their past lessons and quizzes naturally.`,
         },
-        {
-          role: "user",
-          content: `${studentName} answered "${answer}" to the question: "${question}"`,
-        },
+        { role: "user", content: context + `\n${studentName}: ${message}` },
       ],
     });
 
-    res.json({ feedback: completion.choices[0].message.content });
+    const reply = completion.choices[0].message.content;
+    memory[studentName].history.push({ role: "assistant", content: reply });
+    saveMemory(memory);
+
+    res.json({ reply });
   } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "Failed to grade answer." });
+    console.error(err);
+    res.status(500).json({ error: "Memory chat failed." });
   }
 });
 
-export default router;
+// === Store quiz results ===
+router.post("/api/quiz/save", (req, res) => {
+  const { studentName, subject, score } = req.body;
+  const memory = loadMemory();
+  if (!memory[studentName]) memory[studentName] = { history: [], quizzes: [] };
+  memory[studentName].quizzes.push({ subject, score, date: new Date().toISOString() });
+  saveMemory(memory);
+  res.json({ success: true });
+});
+
+// === View progress ===
+router.get("/api/progress/:studentName", (req, res) => {
+  const memory = loadMemory();
+  res.json(memory[req.params.studentName] || {});
+});
+
+// === Reset progress ===
+router.delete("/api/progress/:studentName", (req, res) => {
+  const memory = loadMemory();
+  delete memory[req.params.studentName];
+  saveMemory(memory);
+  res.json({ success: true });
+});
