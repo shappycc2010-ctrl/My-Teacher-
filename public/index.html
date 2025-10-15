@@ -1,19 +1,23 @@
-<!-- DASHBOARD -->
-<section id="dashboard" class="p-4 bg-white/60 rounded-xl shadow-lg mt-4">
-  <h2 class="text-xl font-bold mb-2 text-center">📊 Mr. Kelly’s Class Dashboard</h2>
-  <table id="classTable" class="w-full text-sm border border-gray-300 rounded-lg overflow-hidden">
-    <thead class="bg-gray-200 text-gray-700">
-      <tr>
-        <th class="p-2">Student</th>
-        <th class="p-2">Messages</th>
-        <th class="p-2">Average Score</th>
-        <th class="p-2">Last Seen</th>
-      </tr>
-    </thead>
-    <tbody id="classBody" class="text-center bg-white"></tbody>
-  </table>
-    </section
-<button id="memoryChatBtn">💬 Memory Chat</button>
-<button id="progressBtn">📘 View Progress</button>
-<button id="resetBtn">♻️ Reset Progress</button>
-<button id="quizBtn">Start Quiz 🧩</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mr. Kelly – Your AI Teacher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="chat-container">
+    <h1>👨‍🏫 Mr. Kelly – AI Teacher</h1>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="Ask Mr. Kelly something...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
