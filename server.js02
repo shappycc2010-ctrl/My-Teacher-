@@ -1,5 +1,5 @@
 import authRouter, { authMiddleware } from "./auth.js";
-app.use("/", authRouter);
+app.use(express.static("public"));
 
 // protect dashboard / progress endpoints:
 // example
