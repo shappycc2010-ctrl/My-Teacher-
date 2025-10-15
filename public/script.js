@@ -1,43 +1,43 @@
-const memoryChatBtn = document.getElementById("memoryChatBtn");
-const progressBtn   = document.getElementById("progressBtn");
-const resetBtn      = document.getElementById("resetBtn");
+const openDashboardBtn = document.getElementById("openDashboard");
+const closeDashboardBtn = document.getElementById("closeDashboard");
+const dashboard = document.getElementById("dashboard");
 
-// Memory chat (context-aware)
-async function memoryChat() {
-  const message = prompt("Ask Mr. Kelly something (he remembers your progress):");
-  if (!message) return;
+async function openDashboard() {
+  const res = await fetch(`/api/dashboard/${studentName}`);
+  const data = await res.json();
 
-  addMessage("user", message);
+  dashboard.style.display = "block";
 
-  const res = await fetch("/api/chat-memory", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ studentName, message }),
+  // Create Chart.js chart dynamically
+  const ctx = document.getElementById("quizChart").getContext("2d");
+  if (window.quizChart) window.quizChart.destroy();
+
+  window.quizChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: data.quizScores.map(q => q.subject),
+      datasets: [{
+        label: "Quiz Scores (out of 5)",
+        data: data.quizScores.map(q => q.score),
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, max: 5 }
+      }
+    }
   });
-  const data = await res.json();
-  addMessage("ai", data.reply);
+
+  document.getElementById("lessonSummary").innerHTML = `
+    <p>Lessons Taken: <b>${data.lessonCount}</b></p>
+    <p>Last Interaction: <i>${data.lastActive}</i></p>
+  `;
 }
 
-// View progress
-async function viewProgress() {
-  const res = await fetch(`/api/progress/${studentName}`);
-  const data = await res.json();
-  let text = `📘 Progress for ${studentName}\n\n`;
-  if (data.quizzes?.length)
-    data.quizzes.forEach((q) => {
-      text += `• ${q.subject}: ${q.score}/5 (${new Date(q.date).toLocaleDateString()})\n`;
-    });
-  else text += "No quizzes yet.";
-  addMessage("ai", text);
+function closeDashboard() {
+  dashboard.style.display = "none";
 }
 
-// Reset progress
-async function resetProgress() {
-  if (!confirm("Reset your progress?")) return;
-  await fetch(`/api/progress/${studentName}`, { method: "DELETE" });
-  addMessage("ai", "Progress reset ✅");
-}
-
-memoryChatBtn.addEventListener("click", memoryChat);
-progressBtn.addEventListener("click", viewProgress);
-resetBtn.addEventListener("click", resetProgress);
+openDashboardBtn.addEventListener("click", openDashboard);
+closeDashboardBtn.addEventListener("click", closeDashboard);
