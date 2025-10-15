@@ -9,7 +9,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // ✅ Use the router properly
-app.use("/", aiRouter);
+app.use(express.static("public"));
 
 app.get("/", (req, res) => {
   res.send("✅ Mr. Kelly AI server is running fine!");
