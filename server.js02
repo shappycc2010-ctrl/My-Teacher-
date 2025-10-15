@@ -4,3 +4,5 @@ app.use("/", authRouter);
 // protect dashboard / progress endpoints:
 // example
 app.get("/api/progress/:studentName", authMiddleware, (req, res) => { /* ... */ });
+import paymentRouter from "./payment.js";
+app.use("/api/payment", paymentRouter);
