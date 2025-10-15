@@ -1,40 +1,162 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mr. Kelly — My Teacher</title>
-  <link rel="stylesheet" href="/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mr. Kelly AI Teacher</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f7f9fc, #dbeafe);
+      color: #222;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+    }
+
+    header {
+      background-color: #2563eb;
+      color: white;
+      width: 100%;
+      text-align: center;
+      padding: 1rem 0;
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      background-color: #f3f4f6;
+      border-bottom: 1px solid #e5e7eb;
+      width: 100%;
+    }
+
+    input, select, button {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      transition: background 0.3s ease;
+      font-weight: 600;
+    }
+
+    #sendBtn {
+      background-color: #2563eb;
+      color: white;
+    }
+
+    #sendBtn:hover {
+      background-color: #1e40af;
+    }
+
+    #submitBtn {
+      background-color: #059669;
+      color: white;
+    }
+
+    #submitBtn:hover {
+      background-color: #047857;
+    }
+
+    #clearBtn {
+      background-color: #dc2626;
+      color: white;
+    }
+
+    #clearBtn:hover {
+      background-color: #b91c1c;
+    }
+
+    #chat {
+      flex: 1;
+      width: 100%;
+      max-width: 700px;
+      background-color: white;
+      border-radius: 1rem;
+      padding: 1rem;
+      margin: 1rem auto;
+      overflow-y: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .msg {
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      line-height: 1.4;
+      max-width: 80%;
+      word-wrap: break-word;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .msg.user {
+      background-color: #e0f2fe;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .msg.ai {
+      background-color: #f3f4f6;
+      margin-right: auto;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      width: 100%;
+      text-align: center;
+      padding: 0.75rem;
+      background-color: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+      color: #444;
+    }
+
+    #status {
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+  </style>
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="title">🧑‍🏫 Mr. Kelly — My Teacher</div>
-      <div class="modes">
-        <label for="mode">Mode:</label>
-        <option value="homework">Homework</option>
-          <option value="general">General</option>
-          <option value="math">Math Tutor</option>
-          <option value="english">English Tutor</option>
-          <option value="science">Science Tutor</option>
-          <option value="history">History Tutor</option>
-        </select>
-      </div>
-    </header>
+  <header>🎓 Mr. Kelly — Your Friendly AI Teacher</header>
 
-    <section id="chat" class="chat"></section>
+  <section id="controls">
+    <input type="text" id="studentName" placeholder="Enter your name" />
+    <select id="mode">
+      <option value="chat">💬 Chat Mode</option>
+      <option value="homework">📘 Homework Mode</option>
+    </select>
+    <input type="text" id="input" placeholder="Type your message..." />
+    <button id="sendBtn">Send</button>
+    <button id="submitBtn">Submit Homework</button>
+    <button id="clearBtn">Clear Chat</button>
+  </section>
 
-    <div class="composer">
-      <input id="name" placeholder="Your name (optional)" />
-      <textarea id="message" placeholder="Ask Mr. Kelly a question..." rows="2"></textarea>
-      <div class="composer-row">
-        <button id="sendBtn" class="btn">Send</button>
-        <button id="clearBtn" class="btn secondary">Clear Chat</button>
-      </div>
-      <div id="status" class="status"></div>
-    </div>
-  </main>
+  <main id="chat"></main>
 
-  <script src="/script.js"></script>
+  <footer>
+    <div id="status">✅ Ready</div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
-  </html>
+      </html>
