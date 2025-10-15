@@ -1,26 +1,39 @@
 import express from "express";
 import OpenAI from "openai";
-
 const router = express.Router();
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// 1️⃣ AI chat endpoint
 router.post("/api/chat", async (req, res) => {
+  const { message, studentName, mode = "chat", topic } = req.body;
+
   try {
-    const { message, studentName } = req.body;
+    let systemPrompt = "You are Mr. Kelly, a friendly AI teacher.";
+
+    if (mode === "lesson") {
+      systemPrompt = `You are Mr. Kelly, teaching a lesson on "${topic}". 
+      Explain simply and ask small reflective questions.`;
+    }
+
+    if (mode === "quiz") {
+      systemPrompt = `You are Mr. Kelly, giving a 5-question quiz about "${topic}". 
+      Ask one question at a time and give feedback after each answer.`;
+    }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher who helps students." },
+        { role: "system", content: systemPrompt },
         { role: "user", content: `${studentName}: ${message}` },
       ],
     });
 
     res.json({ reply: completion.choices[0].message.content });
-  } catch (error) {
-    console.error("AI error:", error);
-    res.status(500).json({ error: "AI request failed." });
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ error: "AI error" });
   }
 });
 
-export default router; // ✅ Make sure this is present
+export default router;
