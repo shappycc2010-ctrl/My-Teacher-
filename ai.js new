@@ -4,22 +4,81 @@ import OpenAI from "openai";
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Memory map (temporary, resets on server restart)
+const homeworkSessions = {};
+
 router.post("/api/chat", async (req, res) => {
   try {
-    const { message, studentName } = req.body;
+    const { message, studentName, mode, action } = req.body;
+
+    // --- handle homework mode
+    if (mode === "homework") {
+      // create session if not exist
+      if (!homeworkSessions[studentName]) {
+        homeworkSessions[studentName] = { answers: [], submitted: false };
+      }
+
+      const session = homeworkSessions[studentName];
+
+      // before submission: only acknowledge receipt
+      if (action === "submit") {
+        session.submitted = true;
+        const gradingPrompt = session.answers
+          .map((a, i) => `Q${i + 1}: ${a}`)
+          .join("\n");
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are Mr. Kelly, a teacher. Grade the student's homework from 1 to 10 for each answer. Provide a short explanation for each grade and an overall comment."
+            },
+            { role: "user", content: gradingPrompt }
+          ]
+        });
+
+        const reply = completion.choices[0].message.content;
+        homeworkSessions[studentName] = { answers: [], submitted: false }; // reset
+        return res.json({ reply });
+      } else {
+        // storing answers before submit
+        session.answers.push(message);
+        return res.json({
+          reply: `✅ Got your answer for question ${
+            session.answers.length
+          }. When done, click Submit to grade your work.`
+        });
+      }
+    }
+
+    // --- regular conversation (non-homework)
+    const modePrompts = {
+      math: "You are Mr. Kelly, a helpful math tutor. Explain step-by-step.",
+      english:
+        "You are Mr. Kelly, an English tutor. Focus on grammar and vocabulary.",
+      science: "You are Mr. Kelly, a science tutor with clear examples.",
+      history:
+        "You are Mr. Kelly, a history tutor who provides accurate context.",
+      general:
+        "You are Mr. Kelly, a friendly AI teacher who helps with general learning.",
+    };
+    const system = modePrompts[mode] || modePrompts.general;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher." },
+        { role: "system", content: system },
         { role: "user", content: `${studentName}: ${message}` }
       ]
     });
 
-    res.json({ reply: completion.choices[0].message.content });
+    const reply = completion.choices[0].message.content;
+    res.json({ reply });
   } catch (err) {
-    console.error("AI error:", err);
-    res.status(500).json({ error: "Something went wrong with Mr. Kelly." });
+    console.error("Error:", err);
+    res.status(500).json({ error: "AI processing error." });
   }
 });
 
