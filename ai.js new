@@ -4,25 +4,17 @@ import OpenAI from "openai";
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Store active lessons in memory for now
-const activeLessons = {};
-
+// === Existing chat route ===
 router.post("/api/chat", async (req, res) => {
   try {
     const { message, studentName } = req.body;
-    const isLessonMode = activeLessons[studentName];
-
-    let systemPrompt = "You are Mr. Kelly, a friendly AI teacher.";
-    if (isLessonMode) {
-      systemPrompt += ` You are currently teaching ${activeLessons[studentName]}. Keep your responses educational and structured.`;
-    }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `${studentName}: ${message}` }
-      ]
+        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher who helps students." },
+        { role: "user", content: `${studentName}: ${message}` },
+      ],
     });
 
     res.json({ reply: completion.choices[0].message.content });
@@ -32,20 +24,57 @@ router.post("/api/chat", async (req, res) => {
   }
 });
 
-// Start a new lesson
-router.post("/api/lesson/start", async (req, res) => {
-  const { studentName, subject } = req.body;
-  activeLessons[studentName] = subject;
+// === New: Start Quiz ===
+router.post("/api/quiz/start", async (req, res) => {
+  try {
+    const { studentName, subject } = req.body;
 
-  const startMessage = `Alright ${studentName}, let's begin our lesson on ${subject}! I'll explain the basics first, then ask you a few quiz questions.`;
-  res.json({ reply: startMessage });
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are Mr. Kelly, a helpful teacher. 
+          Create a 5-question quiz for the subject "${subject}". 
+          Each question should be numbered, with 4 options (A–D). 
+          Keep it concise and interesting. Do not include answers.`,
+        },
+        { role: "user", content: `${studentName} is ready for a quiz on ${subject}.` },
+      ],
+    });
+
+    res.json({ quiz: completion.choices[0].message.content });
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ error: "Failed to generate quiz." });
+  }
 });
 
-// End a lesson
-router.post("/api/lesson/exit", async (req, res) => {
-  const { studentName } = req.body;
-  delete activeLessons[studentName];
-  res.json({ reply: `Good job, ${studentName}! You've completed your lesson. 🏅` });
+// === New: Grade Answer ===
+router.post("/api/quiz/answer", async (req, res) => {
+  try {
+    const { studentName, question, answer } = req.body;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Mr. Kelly, a patient AI teacher. Grade the student’s quiz answer, tell if it’s correct or wrong, give the correct answer, and a short explanation.",
+        },
+        {
+          role: "user",
+          content: `${studentName} answered "${answer}" to the question: "${question}"`,
+        },
+      ],
+    });
+
+    res.json({ feedback: completion.choices[0].message.content });
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ error: "Failed to grade answer." });
+  }
 });
 
 export default router;
