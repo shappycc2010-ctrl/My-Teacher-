@@ -1,117 +1,110 @@
-const API_BASE = "https://my-teacher-1.onrender.com"; // your backend
+const API_BASE = "https://my-teacher-1.onrender.com"; // ✅ Your deployed backend URL
+
+// UI elements
 const chatEl = document.getElementById("chat");
+const inputEl = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
-const messageEl = document.getElementById("message");
-const nameEl = document.getElementById("name");
+const submitBtn = document.getElementById("submitBtn");
+const clearBtn = document.getElementById("clearBtn");
+const nameEl = document.getElementById("studentName");
 const modeEl = document.getElementById("mode");
 const statusEl = document.getElementById("status");
-const clearBtn = document.getElementById("clearBtn");
 
-let history = JSON.parse(localStorage.getItem("mk_history") || "[]");
+// Store chat history locally
+let history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
 
-// render existing history
-function render() {
+// --- Display old messages if any
+window.onload = () => {
   chatEl.innerHTML = "";
-  history.forEach(item => {
-    const div = document.createElement("div");
-    div.className = "msg " + (item.sender === "me" ? "me" : "ai");
-    const bubble = document.createElement("div");
-    bubble.className = "bubble";
-    if(item.sender === "me"){
-      bubble.innerHTML = `<div class="meta">${item.name || "You"} <span class="time">${item.time}</span></div><div>${escapeHtml(item.text)}</div>`;
-    } else {
-      bubble.innerHTML = `<div class="meta">Mr. Kelly <span class="time">${item.time}</span></div><div>${escapeHtml(item.text)}</div>`;
-    }
-    div.appendChild(bubble);
-    chatEl.appendChild(div);
-  });
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
+  history.forEach(msg => addMessage(msg.sender, msg.text, msg.name));
+};
 
-function escapeHtml(unsafe) {
-  if(!unsafe) return "";
-  return unsafe.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-}
-
-function pushMessage(sender, text, name){
-  const now = new Date();
-  const time = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-  history.push({ sender, text, time, name });
-  localStorage.setItem("mk_history", JSON.stringify(history));
-  render();
-}
-
-// show typing indicator (temporary bubble)
-function showTyping(){
+// --- Helper to push messages to UI
+function addMessage(sender, text, name) {
   const div = document.createElement("div");
-  div.className = "msg ai";
-  div.id = "typingIndicator";
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.innerHTML = `<div class="meta">Mr. Kelly <span class="time">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
-    <div class="typing"><span></span><span></span><span></span></div>`;
-  div.appendChild(bubble);
+  div.className = sender === "me" ? "msg user" : "msg ai";
+  const senderName = sender === "me" ? name : "Mr. Kelly";
+  div.innerHTML = `<strong>${senderName}:</strong> ${text}`;
   chatEl.appendChild(div);
   chatEl.scrollTop = chatEl.scrollHeight;
+
+  history.push({ sender, text, name });
+  localStorage.setItem("chatHistory", JSON.stringify(history));
 }
 
-// remove typing indicator
-function hideTyping(){
-  const el = document.getElementById("typingIndicator");
-  if(el) el.remove();
+// --- Typing indicator
+function showTyping() {
+  const typing = document.createElement("div");
+  typing.id = "typing";
+  typing.className = "msg ai";
+  typing.textContent = "Mr. Kelly is typing...";
+  chatEl.appendChild(typing);
+  chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-async function sendMessage(){
-  const message = messageEl.value.trim();
-  if(!message) return;
+function hideTyping() {
+  const typing = document.getElementById("typing");
+  if (typing) typing.remove();
+}
+
+// --- Update progress stats
+function updateStats() {
+  const scores = history
+    .filter(h => h.sender === "ai" && h.text.match(/\b\d+\/10\b/))
+    .map(h => parseInt(h.text.match(/\b\d+/)?.[0]));
+  if (scores.length > 0) {
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    localStorage.setItem("avgScore", avg.toFixed(1));
+    statusEl.textContent = `📊 Avg Score: ${avg.toFixed(1)}/10`;
+  }
+}
+
+// --- Send message (regular chat or homework answer)
+async function sendMessage() {
+  const message = inputEl.value.trim();
+  if (!message) return;
+
   const studentName = nameEl.value.trim() || "Student";
-  const mode = modeEl.value || "general";
+  const mode = modeEl.value;
 
-  pushMessage("me", message, studentName);
-  messageEl.value = "";
-  statusEl.textContent = "Sending...";
-
+  addMessage("me", message, studentName);
+  inputEl.value = "";
+  statusEl.textContent = "Thinking...";
   showTyping();
 
   try {
     const res = await fetch(API_BASE + "/api/chat", {
       method: "POST",
-      headers: { "Content-Type":"application/json" },
-      body: JSON.stringify({ studentName, message, mode })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, studentName, mode })
     });
 
     hideTyping();
 
-    if(!res.ok){
-      statusEl.textContent = `Error ${res.status}`;
-      pushMessage("ai", "Sorry — I couldn't reach Mr. Kelly.", "Mr. Kelly");
-      return;
-    }
+    if (!res.ok) throw new Error("Network response was not ok");
 
     const data = await res.json();
-    const reply = data.reply || "No response.";
-    pushMessage("ai", reply, "Mr. Kelly");
-    statusEl.textContent = "Last message delivered.";
+    addMessage("ai", data.reply, "Mr. Kelly");
+    updateStats();
+    statusEl.textContent = "✅ Ready";
   } catch (err) {
     hideTyping();
-    statusEl.textContent = "Network error.";
-    pushMessage("ai", "Network error while contacting Mr. Kelly.", "Mr. Kelly");
+    addMessage("ai", "⚠️ There was an error contacting Mr. Kelly.", "System");
     console.error(err);
+    statusEl.textContent = "Error";
   }
 }
 
-sendBtn.addEventListener("click", sendMessage);
-messageEl.addEventListener("keydown", (e) => {
-  if(e.key === "Enter" && !e.shiftKey){
-    e.preventDefault();
-    sendMessage();
-  }
-});
-clearBtn.addEventListener("click", () => {
-  history = [];
-  localStorage.removeItem("mk_history");
-  render();
-});
+// --- Submit homework for grading
+async function submitHomework() {
+  const studentName = nameEl.value.trim() || "Student";
+  const mode = "homework";
 
-// initial render
-render();
+  addMessage("me", "[Submitting homework...]", studentName);
+  statusEl.textContent = "Grading your homework...";
+  showTyping();
+
+  try {
+    const res = await fetch(API_BASE + "/api/chat", {
+      method: "POST",
+      headers: { "Content-Type":
