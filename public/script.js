@@ -1,43 +1,33 @@
-const openDashboardBtn = document.getElementById("openDashboard");
-const closeDashboardBtn = document.getElementById("closeDashboard");
-const dashboard = document.getElementById("dashboard");
+const chatBox = document.getElementById("chat-box");
+const sendBtn = document.getElementById("sendBtn");
+const userInput = document.getElementById("userInput");
 
-async function openDashboard() {
-  const res = await fetch(`/api/dashboard/${studentName}`);
-  const data = await res.json();
+sendBtn.addEventListener("click", sendMessage);
+userInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
 
-  dashboard.style.display = "block";
+async function sendMessage() {
+  const message = userInput.value.trim();
+  if (!message) return;
 
-  // Create Chart.js chart dynamically
-  const ctx = document.getElementById("quizChart").getContext("2d");
-  if (window.quizChart) window.quizChart.destroy();
+  addMessage("You", message, "user");
+  userInput.value = "";
 
-  window.quizChart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: data.quizScores.map(q => q.subject),
-      datasets: [{
-        label: "Quiz Scores (out of 5)",
-        data: data.quizScores.map(q => q.score),
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true, max: 5 }
-      }
-    }
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, studentName: "Student" })
   });
 
-  document.getElementById("lessonSummary").innerHTML = `
-    <p>Lessons Taken: <b>${data.lessonCount}</b></p>
-    <p>Last Interaction: <i>${data.lastActive}</i></p>
-  `;
+  const data = await res.json();
+  addMessage("Mr. Kelly", data.reply, "ai");
 }
 
-function closeDashboard() {
-  dashboard.style.display = "none";
-}
-
-openDashboardBtn.addEventListener("click", openDashboard);
-closeDashboardBtn.addEventListener("click", closeDashboard);
+function addMessage(sender, text, cls) {
+  const msg = document.createElement("div");
+  msg.classList.add("message", cls);
+  msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+                         }
