@@ -1,0 +1,81 @@
+const chatBox = document.getElementById("chatBox");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const lessonBtn = document.getElementById("lessonBtn"); // new button for lesson mode
+
+let studentName = localStorage.getItem("studentName") || "Student";
+let inLessonMode = false;
+let currentSubject = "";
+
+// Add a message to the chat UI
+function addMessage(sender, text) {
+  const message = document.createElement("div");
+  message.classList.add(sender === "user" ? "user-message" : "ai-message");
+  message.innerText = text;
+  chatBox.appendChild(message);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// Send normal chat message or lesson message
+async function sendMessage() {
+  const message = messageInput.value.trim();
+  if (!message) return;
+
+  addMessage("user", `${studentName}: ${message}`);
+  messageInput.value = "";
+
+  const endpoint = "/api/chat";
+  const body = { message, studentName };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    addMessage("ai", data.reply);
+  } catch (err) {
+    addMessage("ai", "⚠️ There was an error reaching Mr. Kelly.");
+    console.error(err);
+  }
+}
+
+// Start or end lesson mode
+async function toggleLesson() {
+  if (!inLessonMode) {
+    const subject = prompt("What subject do you want to learn? (e.g., Math, Science, History)");
+    if (!subject) return;
+
+    addMessage("user", `${studentName} wants to start a lesson on ${subject}.`);
+    const res = await fetch("/api/lesson/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentName, subject }),
+    });
+    const data = await res.json();
+
+    addMessage("ai", data.reply);
+    inLessonMode = true;
+    currentSubject = subject;
+    lessonBtn.textContent = "End Lesson 📚";
+  } else {
+    const res = await fetch("/api/lesson/exit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentName }),
+    });
+    const data = await res.json();
+
+    addMessage("ai", data.reply);
+    inLessonMode = false;
+    currentSubject = "";
+    lessonBtn.textContent = "Start Lesson 🧠";
+  }
+}
+
+sendBtn.addEventListener("click", sendMessage);
+lessonBtn.addEventListener("click", toggleLesson);
+messageInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
