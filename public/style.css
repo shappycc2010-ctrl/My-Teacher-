@@ -1,4 +1,14 @@
-:root{
+#dashboard table {
+  border-collapse: collapse;
+  width: 100%;
+}
+#dashboard th, #dashboard td {
+  border: 1px solid #ccc;
+  text-align: center;
+}
+#dashboard tr:nth-child(even) {
+  background-color: #f9f9f9;
+}:root{
   --bg:#f5f7fb;
   --card:#ffffff;
   --accent:#2563eb;
