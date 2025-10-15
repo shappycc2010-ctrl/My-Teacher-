@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h2>Buy a Mr. Kelly Premium Lesson ($5)</h2>
+    <button id="payBtn">Pay Now</button>
+
+    <script>
+      document.getElementById("payBtn").onclick = async () => {
+        const res = await fetch("/api/payment/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await res.json();
+        window.location.href = data.url;
+      };
+    </script>
+  </body>
+</html>
