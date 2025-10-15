@@ -1,24 +1,65 @@
-// === Phase 8: Dashboard Data ===
+// ai.js
+import express from "express";
+import fs from "fs";
+import OpenAI from "openai";
 
-// Summary for charts
-router.get("/api/dashboard/:studentName", (req, res) => {
-  const memory = loadMemory();
-  const student = memory[req.params.studentName];
-  if (!student)
-    return res.status(404).json({ error: "Student not found" });
+const router = express.Router();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const quizScores = student.quizzes.map(q => ({
-    subject: q.subject,
-    score: q.score,
-    date: q.date,
-  }));
+// ---------- Simple file storage helpers ----------
+const MEM_FILE = "./student_memory.json";
+const PLANS_FILE = "./plans.json";
+const USERS_FILE = "./users.json"; // optional if you add auth later
 
-  const lessonCount = student.history
-    .filter(h => h.role === "user").length;
+function safeRead(path) {
+  if (!fs.existsSync(path)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(path, "utf8"));
+  } catch (e) {
+    console.error("JSON read error:", path, e);
+    return {};
+  }
+}
+function safeWrite(path, obj) {
+  try {
+    fs.writeFileSync(path, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error("JSON write error:", path, e);
+  }
+}
 
-  res.json({
-    quizScores,
-    lessonCount,
-    lastActive: student.history?.slice(-1)[0]?.content || "N/A"
-  });
-});
+// ---------- In-memory structures (transient) ----------
+const homeworkSessions = {}; // { studentName: { answers: [], submitted: false } }
+const activeLessons = {};    // { studentName: subject }
+
+// ---------- Utility: call OpenAI with a system+user prompt ----------
+async function askOpenAI(system, user, model = process.env.OPENAI_MODEL || "gpt-4o-mini", opts = {}) {
+  const messages = [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+  const params = Object.assign({ model, messages }, opts);
+  const completion = await openai.chat.completions.create(params);
+  return completion.choices[0].message.content;
+}
+
+// ----------------- ROUTES -----------------
+
+// Basic chat (respects lesson mode)
+router.post("/api/chat", async (req, res) => {
+  try {
+    const { message, studentName = "Student", mode } = req.body;
+    const lesson = activeLessons[studentName];
+    const systemBase = lesson
+      ? `You are Mr. Kelly, a friendly, patient teacher currently teaching ${lesson}. Keep answers educational and structured.`
+      : "You are Mr. Kelly, a friendly and helpful AI teacher.";
+    // Incorporate memory context if present
+    const memory = safeRead(MEM_FILE)[studentName];
+    let context = "";
+    if (memory && Array.isArray(memory.history)) {
+      const recent = memory.history.slice(-8).map(h => `${h.role === "user" ? studentName : "Mr. Kelly"}: ${h.content}`).join("\n");
+      context = `Here is recent conversation context:\n${recent}\n\n`;
+    }
+
+    const reply = await askOpenAI(systemBase, context + `${studentName}: ${message}`);
+    // Save
