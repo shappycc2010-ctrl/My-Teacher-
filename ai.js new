@@ -1,31 +1,26 @@
 import express from "express";
-import fs from "fs";
 import OpenAI from "openai";
 
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Path to data file
-const DATA_FILE = "./students.json";
-
-// Helper to read/write data
-function readData() {
-  if (!fs.existsSync(DATA_FILE)) return {};
-  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
-}
-
-function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
-
-/* ---------- Chat Endpoint ---------- */
 router.post("/api/chat", async (req, res) => {
   try {
     const { message, studentName } = req.body;
-    const data = readData();
 
-    if (!data[studentName]) {
-      data[studentName] = { history: [], quizzes: [], plans: [] };
-    }
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are Mr. Kelly, a friendly AI teacher who helps students." },
+        { role: "user", content: `${studentName}: ${message}` },
+      ],
+    });
 
-    data[studentName].history.push({ role: "user", content: message, date: new Date() });
+    res.json({ reply: completion.choices[0].message.content });
+  } catch (error) {
+    console.error("AI error:", error);
+    res.status(500).json({ error: "AI request failed." });
+  }
+});
+
+export default router; // ✅ Make sure this is present
