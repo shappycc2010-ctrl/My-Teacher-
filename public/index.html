@@ -3,18 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mr. Kelly – Your AI Teacher</title>
+  <title>Mr Kelly AI</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="chat-container">
-    <h1>👨‍🏫 Mr. Kelly – AI Teacher</h1>
+  <div class="app">
+    <h1>👨‍🏫 Mr Kelly AI Teacher</h1>
 
-    <div id="chat-box" class="chat-box"></div>
+    <div class="controls">
+      <input id="studentName" placeholder="Your name" />
+      <select id="mode">
+        <option value="chat">Chat</option>
+        <option value="lesson">Lesson</option>
+        <option value="quiz">Quiz</option>
+      </select>
+      <input id="topic" placeholder="Topic (e.g. Photosynthesis)" />
+    </div>
 
-    <div class="input-area">
-      <input type="text" id="userInput" placeholder="Ask Mr. Kelly something...">
+    <div id="chatBox"></div>
+
+    <div class="inputArea">
+      <input id="messageInput" placeholder="Type your message..." />
       <button id="sendBtn">Send</button>
+      <button id="voiceBtn">🎤</button>
     </div>
   </div>
 
