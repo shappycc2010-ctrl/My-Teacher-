@@ -1,36 +1,38 @@
-
+// payment.js
 import express from "express";
+import Stripe from "stripe";
+
 const router = express.Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-/*
-  Simple account-to-account payment workflow (manual verification):
-  - Client sends a "payment intent" with userId, plan, and payer details.
-  - Admin checks bank/transfer outside platform, then marks payment as confirmed via admin panel (endpoint).
-  - For starter template we store intents in memory. In production, save to DB.
-*/
+// Create a Checkout Session
+router.post("/create-checkout-session", async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Mr. Kelly Premium Lesson",
+              description: "Access to advanced AI teaching features",
+            },
+            unit_amount: 500, // $5.00
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: "https://my-teacher-1.onrender.com/success",
+      cancel_url: "https://my-teacher-1.onrender.com/cancel",
+    });
 
-const intents = {};
-
-router.post("/intent", (req,res) => {
-  const { userId, plan, payerName, amount } = req.body;
-  if(!userId || !plan || !amount) return res.status(400).json({ error: "userId, plan, amount required" });
-  const id = Date.now().toString();
-  intents[id] = { id, userId, plan, payerName, amount, status: "pending", createdAt: new Date().toISOString() };
-  return res.json({ message: "Payment intent created. Please transfer funds to platform bank account and notify admin.", intent: intents[id] });
-});
-
-// Admin confirms payment (secure this in production)
-router.post("/confirm", (req,res) => {
-  const { intentId, adminKey } = req.body;
-  if(adminKey !== process.env.ADMIN_KEY) return res.status(401).json({ error: "Unauthorized" });
-  if(!intents[intentId]) return res.status(404).json({ error: "Intent not found" });
-  intents[intentId].status = "confirmed";
-  intents[intentId].confirmedAt = new Date().toISOString();
-  return res.json({ message: "Payment confirmed", intent: intents[intentId] });
-});
-
-router.get("/intents", (req,res) => {
-  res.json(Object.values(intents));
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Payment session failed." });
+  }
 });
 
 export default router;
