@@ -1,82 +1,24 @@
-// === Phase 7: Memory & Progress Tracking ===
-import fs from "fs";
+// === Phase 8: Dashboard Data ===
 
-const MEMORY_FILE = "./student_memory.json";
-
-// Helper functions
-function loadMemory() {
-  if (!fs.existsSync(MEMORY_FILE)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(MEMORY_FILE, "utf8"));
-  } catch {
-    return {};
-  }
-}
-function saveMemory(data) {
-  fs.writeFileSync(MEMORY_FILE, JSON.stringify(data, null, 2));
-}
-
-// === Memory-based chat ===
-router.post("/api/chat-memory", async (req, res) => {
-  try {
-    const { studentName, message } = req.body;
-    const memory = loadMemory();
-
-    if (!memory[studentName]) {
-      memory[studentName] = { history: [], quizzes: [] };
-    }
-
-    memory[studentName].history.push({ role: "user", content: message });
-    if (memory[studentName].history.length > 10)
-      memory[studentName].history = memory[studentName].history.slice(-10);
-
-    const context = memory[studentName].history
-      .map((h) => `${h.role === "user" ? studentName : "Mr. Kelly"}: ${h.content}`)
-      .join("\n");
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are Mr. Kelly, an encouraging teacher who remembers students’ progress.
-When talking to ${studentName}, recall their past lessons and quizzes naturally.`,
-        },
-        { role: "user", content: context + `\n${studentName}: ${message}` },
-      ],
-    });
-
-    const reply = completion.choices[0].message.content;
-    memory[studentName].history.push({ role: "assistant", content: reply });
-    saveMemory(memory);
-
-    res.json({ reply });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Memory chat failed." });
-  }
-});
-
-// === Store quiz results ===
-router.post("/api/quiz/save", (req, res) => {
-  const { studentName, subject, score } = req.body;
+// Summary for charts
+router.get("/api/dashboard/:studentName", (req, res) => {
   const memory = loadMemory();
-  if (!memory[studentName]) memory[studentName] = { history: [], quizzes: [] };
-  memory[studentName].quizzes.push({ subject, score, date: new Date().toISOString() });
-  saveMemory(memory);
-  res.json({ success: true });
-});
+  const student = memory[req.params.studentName];
+  if (!student)
+    return res.status(404).json({ error: "Student not found" });
 
-// === View progress ===
-router.get("/api/progress/:studentName", (req, res) => {
-  const memory = loadMemory();
-  res.json(memory[req.params.studentName] || {});
-});
+  const quizScores = student.quizzes.map(q => ({
+    subject: q.subject,
+    score: q.score,
+    date: q.date,
+  }));
 
-// === Reset progress ===
-router.delete("/api/progress/:studentName", (req, res) => {
-  const memory = loadMemory();
-  delete memory[req.params.studentName];
-  saveMemory(memory);
-  res.json({ success: true });
+  const lessonCount = student.history
+    .filter(h => h.role === "user").length;
+
+  res.json({
+    quizScores,
+    lessonCount,
+    lastActive: student.history?.slice(-1)[0]?.content || "N/A"
+  });
 });
