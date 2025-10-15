@@ -1,110 +1,112 @@
-const API_BASE = "https://my-teacher-1.onrender.com"; // ✅ Your deployed backend URL
+const API_BASE = "https://my-teacher-1.onrender.com";
 
-// UI elements
-const chatEl = document.getElementById("chat");
-const inputEl = document.getElementById("input");
+const input = document.getElementById("input");
+const chat = document.getElementById("chat");
 const sendBtn = document.getElementById("sendBtn");
 const submitBtn = document.getElementById("submitBtn");
 const clearBtn = document.getElementById("clearBtn");
-const nameEl = document.getElementById("studentName");
-const modeEl = document.getElementById("mode");
-const statusEl = document.getElementById("status");
+const studentNameInput = document.getElementById("studentName");
+const modeSelect = document.getElementById("mode");
+const statusDiv = document.getElementById("status");
 
-// Store chat history locally
-let history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+// 🎤 Setup Speech Recognition
+let recognition;
+if ("webkitSpeechRecognition" in window) {
+  recognition = new webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
 
-// --- Display old messages if any
-window.onload = () => {
-  chatEl.innerHTML = "";
-  history.forEach(msg => addMessage(msg.sender, msg.text, msg.name));
-};
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    input.value = transcript;
+    sendMessage();
+  };
 
-// --- Helper to push messages to UI
-function addMessage(sender, text, name) {
-  const div = document.createElement("div");
-  div.className = sender === "me" ? "msg user" : "msg ai";
-  const senderName = sender === "me" ? name : "Mr. Kelly";
-  div.innerHTML = `<strong>${senderName}:</strong> ${text}`;
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
-
-  history.push({ sender, text, name });
-  localStorage.setItem("chatHistory", JSON.stringify(history));
+  recognition.onerror = (e) => {
+    statusDiv.textContent = "⚠️ Voice input error: " + e.error;
+  };
+} else {
+  console.warn("Speech recognition not supported in this browser.");
 }
 
-// --- Typing indicator
-function showTyping() {
-  const typing = document.createElement("div");
-  typing.id = "typing";
-  typing.className = "msg ai";
-  typing.textContent = "Mr. Kelly is typing...";
-  chatEl.appendChild(typing);
-  chatEl.scrollTop = chatEl.scrollHeight;
+// 🔊 Text-to-Speech
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = speechSynthesis
+    .getVoices()
+    .find((v) => v.name.includes("Google UK English Male")) || null;
+  utterance.rate = 1.05;
+  utterance.pitch = 1;
+  speechSynthesis.speak(utterance);
 }
 
-function hideTyping() {
-  const typing = document.getElementById("typing");
-  if (typing) typing.remove();
+// 🧩 Utility to add chat messages
+function addMessage(sender, text) {
+  const msg = document.createElement("div");
+  msg.classList.add("msg", sender);
+  msg.textContent = text;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
 }
 
-// --- Update progress stats
-function updateStats() {
-  const scores = history
-    .filter(h => h.sender === "ai" && h.text.match(/\b\d+\/10\b/))
-    .map(h => parseInt(h.text.match(/\b\d+/)?.[0]));
-  if (scores.length > 0) {
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    localStorage.setItem("avgScore", avg.toFixed(1));
-    statusEl.textContent = `📊 Avg Score: ${avg.toFixed(1)}/10`;
-  }
-}
-
-// --- Send message (regular chat or homework answer)
+// 🧠 Send Message to Backend
 async function sendMessage() {
-  const message = inputEl.value.trim();
+  const studentName = studentNameInput.value.trim() || "Student";
+  const message = input.value.trim();
+
   if (!message) return;
 
-  const studentName = nameEl.value.trim() || "Student";
-  const mode = modeEl.value;
-
-  addMessage("me", message, studentName);
-  inputEl.value = "";
-  statusEl.textContent = "Thinking...";
-  showTyping();
+  addMessage("user", `${studentName}: ${message}`);
+  input.value = "";
+  statusDiv.textContent = "🤖 Thinking...";
 
   try {
-    const res = await fetch(API_BASE + "/api/chat", {
+    const response = await fetch(`${API_BASE}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, studentName, mode })
+      body: JSON.stringify({ message, studentName }),
     });
 
-    hideTyping();
-
-    if (!res.ok) throw new Error("Network response was not ok");
-
-    const data = await res.json();
-    addMessage("ai", data.reply, "Mr. Kelly");
-    updateStats();
-    statusEl.textContent = "✅ Ready";
+    const data = await response.json();
+    const reply = data.reply || "Hmm... I’m not sure about that one!";
+    addMessage("ai", `Mr. Kelly: ${reply}`);
+    speak(reply);
+    statusDiv.textContent = "✅ Ready";
   } catch (err) {
-    hideTyping();
-    addMessage("ai", "⚠️ There was an error contacting Mr. Kelly.", "System");
     console.error(err);
-    statusEl.textContent = "Error";
+    statusDiv.textContent = "❌ Error connecting to Mr. Kelly";
   }
 }
 
-// --- Submit homework for grading
-async function submitHomework() {
-  const studentName = nameEl.value.trim() || "Student";
-  const mode = "homework";
+// 📘 Homework Submission Simulation
+submitBtn.addEventListener("click", () => {
+  const score = Math.floor(Math.random() * 40) + 60;
+  const message = `Your homework has been submitted! Score: ${score}/100`;
+  addMessage("ai", message);
+  speak(message);
+});
 
-  addMessage("me", "[Submitting homework...]", studentName);
-  statusEl.textContent = "Grading your homework...";
-  showTyping();
+// 💬 Event Listeners
+sendBtn.addEventListener("click", sendMessage);
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
 
-  try {
-    const res = await fetch(API_BASE + "/api/chat", {
-      method: "POST",
-      headers: { "Content-Type":
+clearBtn.addEventListener("click", () => {
+  chat.innerHTML = "";
+});
+
+// 🎤 Long-press Send button to activate voice input
+sendBtn.addEventListener("mousedown", () => {
+  if (recognition) {
+    statusDiv.textContent = "🎙️ Listening...";
+    recognition.start();
+  }
+});
+sendBtn.addEventListener("mouseup", () => {
+  if (recognition) {
+    recognition.stop();
+    statusDiv.textContent = "✅ Ready";
+  }
+});
