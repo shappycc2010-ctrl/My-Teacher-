@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mr. Kelly — My Teacher</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="title">🧑‍🏫 Mr. Kelly — My Teacher</div>
+      <div class="modes">
+        <label for="mode">Mode:</label>
+        <select id="mode">
+          <option value="general">General</option>
+          <option value="math">Math Tutor</option>
+          <option value="english">English Tutor</option>
+          <option value="science">Science Tutor</option>
+          <option value="history">History Tutor</option>
+        </select>
+      </div>
+    </header>
+
+    <section id="chat" class="chat"></section>
+
+    <div class="composer">
+      <input id="name" placeholder="Your name (optional)" />
+      <textarea id="message" placeholder="Ask Mr. Kelly a question..." rows="2"></textarea>
+      <div class="composer-row">
+        <button id="sendBtn" class="btn">Send</button>
+        <button id="clearBtn" class="btn secondary">Clear Chat</button>
+      </div>
+      <div id="status" class="status"></div>
+    </div>
+  </main>
+
+  <script src="/script.js"></script>
+</body>
+  </html>
