@@ -62,4 +62,245 @@ router.post("/api/chat", async (req, res) => {
     }
 
     const reply = await askOpenAI(systemBase, context + `${studentName}: ${message}`);
-    // Save
+    // Save to memory
+    const mem = safeRead(MEM_FILE);
+    if (!mem[studentName]) mem[studentName] = { history: [], quizzes: [], plans: [] };
+    mem[studentName].history.push({ role: "user", content: message, date: new Date().toISOString() });
+    mem[studentName].history.push({ role: "assistant", content: reply, date: new Date().toISOString() });
+    if (mem[studentName].history.length > 200) mem[studentName].history = mem[studentName].history.slice(-200);
+    safeWrite(MEM_FILE, mem);
+
+    res.json({ reply });
+  } catch (err) {
+    console.error("api/chat error:", err);
+    res.status(500).json({ error: "AI chat failed." });
+  }
+});
+
+// ---------- Lesson routes ----------
+router.post("/api/lesson/start", (req, res) => {
+  const { studentName = "Student", subject = "General" } = req.body;
+  activeLessons[studentName] = subject;
+  const reply = `Alright ${studentName} — starting a lesson on ${subject}. I'll explain the basics, then ask a few short questions. Say "I'm done" or call /api/lesson/exit when finished.`;
+  res.json({ reply });
+});
+
+router.post("/api/lesson/exit", (req, res) => {
+  const { studentName = "Student" } = req.body;
+  delete activeLessons[studentName];
+  res.json({ reply: `Great work, ${studentName}! You've finished the lesson.` });
+});
+
+// ---------- Homework flow ----------
+router.post("/api/homework", (req, res) => {
+  // Stores answers or triggers grading on action: "submit"
+  try {
+    const { studentName = "Student", message, action } = req.body;
+    if (!homeworkSessions[studentName]) homeworkSessions[studentName] = { answers: [], submitted: false };
+
+    const session = homeworkSessions[studentName];
+
+    if (action === "submit") {
+      // Grade stored answers with OpenAI
+      (async () => {
+        try {
+          const gradingPrompt = session.answers.map((a, i) => `Q${i + 1}: ${a}`).join("\n");
+          const system = "You are Mr. Kelly. Grade each answer 1-10, give a short explanation for each, and an overall comment and average score.";
+          const grading = await askOpenAI(system, gradingPrompt);
+          // After grading, reset session
+          homeworkSessions[studentName] = { answers: [], submitted: false };
+
+          // Save to memory quizzes (approximate)
+          const mem = safeRead(MEM_FILE);
+          if (!mem[studentName]) mem[studentName] = { history: [], quizzes: [], plans: [] };
+          mem[studentName].quizzes.push({ type: "homework", summary: grading, date: new Date().toISOString() });
+          safeWrite(MEM_FILE, mem);
+
+          res.json({ reply: grading });
+        } catch (e) {
+          console.error("homework grading error:", e);
+          res.status(500).json({ error: "Grading failed." });
+        }
+      })();
+      return;
+    } else {
+      // Save answer
+      session.answers.push(message);
+      return res.json({ reply: `✅ Received your answer (#${session.answers.length}). When done, submit to grade.` });
+    }
+  } catch (err) {
+    console.error("api/homework error:", err);
+    res.status(500).json({ error: "Homework failed." });
+  }
+});
+
+// ---------- Quiz generation & grading ----------
+router.post("/api/quiz/start", async (req, res) => {
+  try {
+    const { studentName = "Student", subject = "General" } = req.body;
+    const system = `You are Mr. Kelly. Create a 5-question multiple-choice quiz (A-D) on "${subject}". Return questions numbered 1-5 with options; do NOT include answers. Keep it concise.`;
+    const quizText = await askOpenAI(system, `${studentName} is ready for a quiz on ${subject}`);
+    // Save quiz to memory (raw)
+    const mem = safeRead(MEM_FILE);
+    if (!mem[studentName]) mem[studentName] = { history: [], quizzes: [], plans: [] };
+    mem[studentName].quizzes.push({ subject, quiz: quizText, date: new Date().toISOString() });
+    safeWrite(MEM_FILE, mem);
+
+    res.json({ quiz: quizText });
+  } catch (err) {
+    console.error("quiz start error:", err);
+    res.status(500).json({ error: "Quiz generation failed." });
+  }
+});
+
+router.post("/api/quiz/answer", async (req, res) => {
+  try {
+    const { studentName = "Student", question, answer } = req.body;
+    const system = "You are Mr. Kelly. Grade the student's selected option (A-D) for the provided question, say if it's correct, provide the correct answer and a short explanation.";
+    const user = `${studentName} answered "${answer}" for: ${question}`;
+    const feedback = await askOpenAI(system, user);
+    // Save feedback to memory
+    const mem = safeRead(MEM_FILE);
+    if (!mem[studentName]) mem[studentName] = { history: [], quizzes: [], plans: [] };
+    mem[studentName].quizzes.push({ question, answer, feedback, date: new Date().toISOString() });
+    safeWrite(MEM_FILE, mem);
+
+    res.json({ feedback });
+  } catch (err) {
+    console.error("quiz answer error:", err);
+    res.status(500).json({ error: "Quiz grading failed." });
+  }
+});
+
+// ---------- Study plans (create + list) ----------
+router.post("/api/plan/create", async (req, res) => {
+  try {
+    const { studentName = "Student", subject = "General", durationWeeks = 4, level = "beginner", goals = "" } = req.body;
+    const system = "You are Mr. Kelly, a careful curriculum designer. Output structured JSON describing a weekly plan.";
+    const userPrompt = `Create a ${durationWeeks}-week study plan for a ${level} student on "${subject}". Include for each week: topics (array), 3 exercises (array), expected outcome (string), quizTheme (string). Output only JSON or JSON-first content. Goals: ${goals}.`;
+    const planText = await askOpenAI(system, userPrompt, process.env.OPENAI_MODEL || "gpt-4o-mini", { temperature: 0.2 });
+
+    // try parse
+    let planObj;
+    try { planObj = JSON.parse(planText); }
+    catch (e) { planObj = { raw: planText }; }
+
+    const allPlans = safeRead(PLANS_FILE);
+    if (!allPlans[studentName]) allPlans[studentName] = [];
+    const record = { id: Date.now(), subject, level, durationWeeks, goals, createdAt: new Date().toISOString(), plan: planObj };
+    allPlans[studentName].push(record);
+    safeWrite(PLANS_FILE, allPlans);
+
+    // also save pointer in memory
+    const mem = safeRead(MEM_FILE);
+    if (!mem[studentName]) mem[studentName] = { history: [], quizzes: [], plans: [] };
+    mem[studentName].plans.push({ id: record.id, subject, date: record.createdAt });
+    safeWrite(MEM_FILE, mem);
+
+    res.json({ success: true, plan: record });
+  } catch (err) {
+    console.error("plan create error:", err);
+    res.status(500).json({ error: "Plan creation failed." });
+  }
+});
+
+router.get("/api/plan/:studentName", (req, res) => {
+  const plans = safeRead(PLANS_FILE);
+  res.json(plans[req.params.studentName] || []);
+});
+
+// ---------- Memory & progress endpoints ----------
+router.post("/api/chat-memory", async (req, res) => {
+  try {
+    const { studentName = "Student", message } = req.body;
+    const mem = safeRead(MEM_FILE);
+    if (!mem[studentName]) mem[studentName] = { history: [], quizzes: [], plans: [] };
+    mem[studentName].history.push({ role: "user", content: message, date: new Date().toISOString() });
+    if (mem[studentName].history.length > 200) mem[studentName].history = mem[studentName].history.slice(-200);
+
+    // Build context
+    const context = mem[studentName].history.slice(-8).map(h => `${h.role === "user" ? studentName : "Mr. Kelly"}: ${h.content}`).join("\n");
+    const system = `You are Mr. Kelly, a teacher who remembers student's recent work. Use context when answering.`;
+    const reply = await askOpenAI(system, `${context}\n${studentName}: ${message}`);
+    mem[studentName].history.push({ role: "assistant", content: reply, date: new Date().toISOString() });
+    safeWrite(MEM_FILE, mem);
+    res.json({ reply });
+  } catch (err) {
+    console.error("chat-memory error:", err);
+    res.status(500).json({ error: "Memory chat failed." });
+  }
+});
+
+router.post("/api/quiz/save", (req, res) => {
+  const { studentName = "Student", subject, score } = req.body;
+  const mem = safeRead(MEM_FILE);
+  if (!mem[studentName]) mem[studentName] = { history: [], quizzes: [], plans: [] };
+  mem[studentName].quizzes.push({ subject, score, date: new Date().toISOString() });
+  safeWrite(MEM_FILE, mem);
+  res.json({ success: true });
+});
+
+router.get("/api/progress/:studentName", (req, res) => {
+  const mem = safeRead(MEM_FILE);
+  res.json(mem[req.params.studentName] || {});
+});
+
+router.delete("/api/progress/:studentName", (req, res) => {
+  const mem = safeRead(MEM_FILE);
+  delete mem[req.params.studentName];
+  safeWrite(MEM_FILE, mem);
+  res.json({ success: true });
+});
+
+// ---------- Dashboard summary ----------
+router.get("/api/dashboard/:studentName", (req, res) => {
+  const mem = safeRead(MEM_FILE);
+  const student = mem[req.params.studentName];
+  if (!student) return res.status(404).json({ error: "Student not found" });
+
+  const quizScores = (student.quizzes || []).map(q => ({ subject: q.subject || "N/A", score: q.score || 0, date: q.date || q.date }));
+  const lessonCount = (student.history || []).filter(h => h.role === "user").length;
+  const lastActive = (student.history && student.history.slice(-1)[0]) ? student.history.slice(-1)[0].content : "N/A";
+
+  res.json({ quizScores, lessonCount, lastActive });
+});
+
+// ---------- Optional: TTS proxy (ElevenLabs or similar) ----------
+router.post("/api/tts", async (req, res) => {
+  try {
+    const key = process.env.ELEVENLABS_API_KEY;
+    const voice = process.env.ELEVENLABS_VOICE_ID || "alloy";
+    const { text } = req.body;
+    if (!key) return res.status(400).json({ error: "TTS API key not configured." });
+
+    // ElevenLabs API example: POST to text-to-speech endpoint and stream audio back
+    // NOTE: implement according to provider docs and rate limits.
+    const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${voice}`;
+    const resp = await fetch(ttsUrl, {
+      method: "POST",
+      headers: {
+        "xi-api-key": key,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text();
+      console.error("TTS provider error:", txt);
+      return res.status(500).json({ error: "TTS provider error" });
+    }
+
+    const arrayBuffer = await resp.arrayBuffer();
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.send(Buffer.from(arrayBuffer));
+  } catch (err) {
+    console.error("tts error:", err);
+    res.status(500).json({ error: "TTS failed." });
+  }
+});
+
+// ---------- Health route (optional) ----------
+router.get("/api/health", (req, res) => res.json({ ok: true, now: new Date().toISOString() }));
+
+export default router;
