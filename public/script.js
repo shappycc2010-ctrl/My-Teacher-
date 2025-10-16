@@ -1,59 +1,53 @@
-const chatBox = document.getElementById("chatBox");
-const sendBtn = document.getElementById("sendBtn");
-const messageInput = document.getElementById("messageInput");
-const studentName = document.getElementById("studentName");
-const topicInput = document.getElementById("topic");
-const modeSelect = document.getElementById("mode");
-const voiceBtn = document.getElementById("voiceBtn");
+const chatBox = document.getElementById("chat-box");
+const input = document.getElementById("user-input");
+const sendBtn = document.getElementById("send-btn");
+const nameInput = document.getElementById("student-name");
+const topicInput = document.getElementById("lesson-topic");
+const modeSelect = document.getElementById("mode-select");
 
-function appendMessage(sender, text) {
-  const div = document.createElement("div");
-  div.classList.add("message", sender);
-  div.textContent = text;
-  chatBox.appendChild(div);
+// Function to append messages
+function addMessage(sender, text, color = "lightblue") {
+  const messageDiv = document.createElement("div");
+  messageDiv.textContent = `${sender}: ${text}`;
+  messageDiv.style.background = color;
+  messageDiv.style.margin = "8px";
+  messageDiv.style.padding = "8px";
+  messageDiv.style.borderRadius = "8px";
+  chatBox.appendChild(messageDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+// Function to send message to backend
 async function sendMessage() {
-  const message = messageInput.value.trim();
-  const name = studentName.value || "Student";
-  const topic = topicInput.value;
+  const message = input.value.trim();
+  const studentName = nameInput.value.trim() || "Student";
   const mode = modeSelect.value;
 
   if (!message) return;
 
-  appendMessage("user", `${name}: ${message}`);
-  messageInput.value = "";
+  addMessage(studentName, message, "#d6f4ff");
+  input.value = "";
 
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, studentName: name, topic, mode }),
-  });
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, studentName, mode }),
+    });
 
-  const data = await res.json();
-  appendMessage("ai", "Mr Kelly: " + data.reply);
-  speak(data.reply);
+    const data = await response.json();
+
+    if (data.reply) {
+      addMessage("Mr. Kelly 👨‍🏫", data.reply, "#e8ffe8");
+    } else {
+      addMessage("Mr. Kelly 👨‍🏫", "I didn’t quite get that, please try again.", "#ffe8e8");
+    }
+  } catch (error) {
+    addMessage("System ⚠️", "Connection issue. Please check your server.", "#ffdddd");
+  }
 }
 
-sendBtn.onclick = sendMessage;
-messageInput.addEventListener("keypress", e => e.key === "Enter" && sendMessage());
-
-// voice input
-const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-voiceBtn.onclick = () => {
-  recognition.start();
-  voiceBtn.textContent = "🎙️ Listening...";
-};
-recognition.onresult = e => {
-  const transcript = e.results[0][0].transcript;
-  messageInput.value = transcript;
-  voiceBtn.textContent = "🎤";
-};
-
-// speech output
-function speak(text) {
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  speechSynthesis.speak(utterance);
-    }
+sendBtn.addEventListener("click", sendMessage);
+input.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
