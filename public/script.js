@@ -51,3 +51,9 @@ sendBtn.addEventListener("click", sendMessage);
 input.addEventListener("keypress", (e) => {
   if (e.key === "Enter") sendMessage();
 });
+function speak(text) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.voice = speechSynthesis.getVoices().find(v => v.name.includes("Male")) || null;
+  utter.rate = 1.05;
+  speechSynthesis.speak(utter);
+                           }
