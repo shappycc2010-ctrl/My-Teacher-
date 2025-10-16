@@ -2,50 +2,46 @@ import express from "express";
 import OpenAI from "openai";
 
 const router = express.Router();
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/api/chat", async (req, res) => {
   try {
-    const { message, studentName, mode } = req.body;
+    const { message, studentName, mode, topic } = req.body;
 
-    // Define dynamic teacher prompt
-    let teacherMode = "";
-    if (mode === "lesson") {
-      teacherMode = "Teach step by step with clear examples like a kind tutor.";
-    } else if (mode === "quiz") {
-      teacherMode = "Ask the student short questions and check their understanding.";
-    } else if (mode === "motivation") {
-      teacherMode = "Encourage and motivate the student with positive messages.";
-    } else {
-      teacherMode = "Be a calm, knowledgeable teacher who explains things clearly.";
+    // Choose behavior based on mode
+    let systemPrompt = "";
+
+    switch (mode) {
+      case "lesson":
+        systemPrompt = `You are Mr. Kelly, a warm and intelligent AI teacher. 
+        Teach ${studentName} about ${topic || "any topic"} in a fun and clear way.
+        Use simple examples and break concepts into easy steps.`;
+        break;
+      case "quiz":
+        systemPrompt = `You are Mr. Kelly, the AI quiz master. 
+        Give ${studentName} a quiz question about ${topic || "general knowledge"}.
+        After their answer, give feedback and the correct explanation.`;
+        break;
+      case "motivation":
+        systemPrompt = `You are Mr. Kelly, a motivational teacher. 
+        Encourage ${studentName} to study hard and stay positive.`;
+        break;
+      default:
+        systemPrompt = `You are Mr. Kelly, a helpful AI teacher who can chat, teach, or quiz.`;
     }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        {
-          role: "system",
-          content: `You are Mr. Kelly, a friendly AI teacher who helps students learn effectively.
-          Always stay positive and explain things in a simple, practical way.`,
-        },
-        {
-          role: "user",
-          content: `${studentName} (${mode || "general"} mode): ${message}`,
-        },
-        {
-          role: "assistant",
-          content: teacherMode,
-        },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `${studentName}: ${message}` }
       ],
-      temperature: 0.8,
     });
 
     res.json({ reply: completion.choices[0].message.content });
   } catch (err) {
-    console.error("AI error:", err);
-    res.status(500).json({ error: "Something went wrong with Mr. Kelly's brain 🧠" });
+    console.error("Error:", err);
+    res.status(500).json({ error: "AI response failed." });
   }
 });
 
