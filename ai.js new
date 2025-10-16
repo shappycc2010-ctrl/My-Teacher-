@@ -1,38 +1,51 @@
 import express from "express";
 import OpenAI from "openai";
+
 const router = express.Router();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-// 1️⃣ AI chat endpoint
 router.post("/api/chat", async (req, res) => {
-  const { message, studentName, mode = "chat", topic } = req.body;
-
   try {
-    let systemPrompt = "You are Mr. Kelly, a friendly AI teacher.";
+    const { message, studentName, mode } = req.body;
 
+    // Define dynamic teacher prompt
+    let teacherMode = "";
     if (mode === "lesson") {
-      systemPrompt = `You are Mr. Kelly, teaching a lesson on "${topic}". 
-      Explain simply and ask small reflective questions.`;
-    }
-
-    if (mode === "quiz") {
-      systemPrompt = `You are Mr. Kelly, giving a 5-question quiz about "${topic}". 
-      Ask one question at a time and give feedback after each answer.`;
+      teacherMode = "Teach step by step with clear examples like a kind tutor.";
+    } else if (mode === "quiz") {
+      teacherMode = "Ask the student short questions and check their understanding.";
+    } else if (mode === "motivation") {
+      teacherMode = "Encourage and motivate the student with positive messages.";
+    } else {
+      teacherMode = "Be a calm, knowledgeable teacher who explains things clearly.";
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `${studentName}: ${message}` },
+        {
+          role: "system",
+          content: `You are Mr. Kelly, a friendly AI teacher who helps students learn effectively.
+          Always stay positive and explain things in a simple, practical way.`,
+        },
+        {
+          role: "user",
+          content: `${studentName} (${mode || "general"} mode): ${message}`,
+        },
+        {
+          role: "assistant",
+          content: teacherMode,
+        },
       ],
+      temperature: 0.8,
     });
 
     res.json({ reply: completion.choices[0].message.content });
   } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "AI error" });
+    console.error("AI error:", err);
+    res.status(500).json({ error: "Something went wrong with Mr. Kelly's brain 🧠" });
   }
 });
 
