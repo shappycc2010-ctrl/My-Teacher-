@@ -1,18 +1,18 @@
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import aiRouter from "./ai.js";
+import { aiRouter } from "./ai.js";
 
 const app = express();
+
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static("public"));
 
 app.use("/", aiRouter);
 
 app.get("/", (req, res) => {
-  res.sendFile(process.cwd() + "/public/index.html");
+  res.send("✅ Mr. Kelly AI server is running fine!");
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Mr. Kelly AI server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
