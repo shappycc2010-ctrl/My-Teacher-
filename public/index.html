@@ -1,32 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mr Kelly AI</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mr. Kelly — Smart Lessons</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app">
-    <h1>👨‍🏫 Mr Kelly AI Teacher</h1>
+  <main class="app">
+    <header class="topbar">
+      <div class="title">👨‍🏫 Mr. Kelly — Smart Lessons</div>
+      <div class="controls">
+        <input id="studentName" placeholder="Your name" />
+        <select id="subjectSelect">
+          <option value="Web development">Web Development</option>
+          <option value="HTML">HTML</option>
+          <option value="CSS">CSS</option>
+          <option value="JavaScript">JavaScript</option>
+          <option value="Math">Math</option>
+          <option value="Science">Science</option>
+        </select>
+        <select id="levelSelect">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+        <button id="startLessonBtn">Start Lesson</button>
+      </div>
+    </header>
 
-    <div class="controls">
-      <input id="studentName" placeholder="Your name" />
-      <select id="mode">
-        <option value="chat">Chat</option>
-        <option value="lesson">Lesson</option>
-        <option value="quiz">Quiz</option>
-      </select>
-      <input id="topic" placeholder="Topic (e.g. Photosynthesis)" />
-    </div>
+    <section id="lessonArea" class="lesson-area">
+      <div id="lessonHeader" class="lesson-header"></div>
+      <div id="lessonContent" class="lesson-content"></div>
+      <div id="quizArea" class="quiz-area" style="display:none"></div>
+    </section>
 
-    <div id="chatBox"></div>
+    <footer class="footer">
+      <button id="nextStepBtn" disabled>Next Step ▶️</button>
+      <button id="askBtn">Ask Question ❓</button>
+      <button id="progressBtn">View Progress 📊</button>
+      <div id="status" class="status">Ready</div>
+    </footer>
+  </main>
 
-    <div class="inputArea">
-      <input id="student-name" placeholder="Your name" />
-<select id="mode-select">
-  <option value="lesson">📘 Lesson</option>
-  <option value="quiz">🧮 Quiz</option>
-  <option value="motivation">🎯 Motivation</option>
-</select>
-<input id="lesson-topic" placeholder="Topic" />
+  <script src="script.js"></script>
+</body>
+  </html>
