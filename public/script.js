@@ -1,28 +1,21 @@
-const dashboard = document.getElementById("dashboard");
-const classroom = document.getElementById("classroom");
 const chatBox = document.getElementById("chatBox");
 const messageInput = document.getElementById("messageInput");
 const chatForm = document.getElementById("chatForm");
-const subjectTitle = document.getElementById("subjectTitle");
-const backBtn = document.getElementById("backBtn");
 
-let currentSubject = "";
 let studentName = "Student";
+let currentSubject = null;
 
-document.querySelectorAll(".card").forEach(card => {
-  card.addEventListener("click", () => {
-    currentSubject = card.dataset.subject;
-    subjectTitle.textContent = `📖 Now Learning: ${currentSubject}`;
-    dashboard.classList.remove("active");
-    classroom.classList.add("active");
-    chatBox.innerHTML = "";
-    addMessage("bot", `Hello! I'm Mr. Kelly, and I'll help you with ${currentSubject} today. What would you like to learn?`);
-  });
-});
+const subjects = ["Math", "Science", "Web Development", "History", "English"];
 
-backBtn.addEventListener("click", () => {
-  classroom.classList.remove("active");
-  dashboard.classList.add("active");
+// Mr. Kelly introduces himself
+window.addEventListener("load", () => {
+  addMessage("bot", "👋 Hello! I’m Mr. Kelly, your AI teacher.");
+  setTimeout(() => {
+    addMessage(
+      "bot",
+      `Today’s subjects are: ${subjects.join(", ")}. Which one would you like to learn first?`
+    );
+  }, 1000);
 });
 
 chatForm.addEventListener("submit", async e => {
@@ -33,13 +26,38 @@ chatForm.addEventListener("submit", async e => {
   addMessage("user", message);
   messageInput.value = "";
 
-  addMessage("bot", "✏️ Thinking...");
+  if (!currentSubject) {
+    const chosen = subjects.find(
+      s => s.toLowerCase() === message.toLowerCase()
+    );
+    if (chosen) {
+      currentSubject = chosen;
+      addMessage("bot", `Excellent choice! Let's start ${chosen} class 📘`);
+      setTimeout(() => {
+        addMessage(
+          "bot",
+          `Ask me any ${chosen} question or topic you’d like to discuss.`
+        );
+      }, 800);
+    } else {
+      addMessage(
+        "bot",
+        `Hmm, I didn’t catch that. Please choose one of the subjects: ${subjects.join(", ")}`
+      );
+    }
+    return;
+  }
 
+  // Normal conversation after subject is chosen
+  addMessage("bot", "✏️ Thinking...");
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, studentName })
+      body: JSON.stringify({
+        message: `(${currentSubject}) ${message}`,
+        studentName,
+      }),
     });
     const data = await res.json();
     chatBox.lastChild.remove(); // remove "Thinking..."
@@ -56,4 +74,4 @@ function addMessage(sender, text) {
   msg.textContent = text;
   chatBox.appendChild(msg);
   chatBox.scrollTop = chatBox.scrollHeight;
-}
+  }
