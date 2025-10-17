@@ -2,21 +2,31 @@ const chatBox = document.getElementById("chatBox");
 const messageInput = document.getElementById("messageInput");
 const chatForm = document.getElementById("chatForm");
 
-let studentName = "Student";
-let currentSubject = null;
+let studentName = null;
+let greeted = false;
 
-const subjects = ["Math", "Science", "Web Development", "History", "English"];
-
-// Mr. Kelly introduces himself
 window.addEventListener("load", () => {
-  addMessage("bot", "👋 Hello! I’m Mr. Kelly, your AI teacher.");
+  startClass();
+});
+
+function startClass() {
+  const time = new Date().getHours();
+  let greeting = "Good day";
+  if (time < 12) greeting = "Good morning";
+  else if (time < 17) greeting = "Good afternoon";
+  else greeting = "Good evening";
+
+  addMessage("bot", `👋 ${greeting}! Welcome back to Mr. Kelly’s Coding Class.`);
   setTimeout(() => {
     addMessage(
       "bot",
-      `Today’s subjects are: ${subjects.join(", ")}. Which one would you like to learn first?`
+      "Today, we’ll be continuing from where we stopped last class. You all did great with your homework, but there’s still room for improvement. 💪"
     );
-  }, 1000);
-});
+  }, 1200);
+  setTimeout(() => {
+    addMessage("bot", "Before we start, may I know your name?");
+  }, 2500);
+}
 
 chatForm.addEventListener("submit", async e => {
   e.preventDefault();
@@ -26,45 +36,38 @@ chatForm.addEventListener("submit", async e => {
   addMessage("user", message);
   messageInput.value = "";
 
-  if (!currentSubject) {
-    const chosen = subjects.find(
-      s => s.toLowerCase() === message.toLowerCase()
+  if (!studentName) {
+    studentName = message;
+    greeted = true;
+    addMessage(
+      "bot",
+      `Nice to meet you, ${studentName}! 👨‍🏫 Let’s dive into today’s coding lesson.`
     );
-    if (chosen) {
-      currentSubject = chosen;
-      addMessage("bot", `Excellent choice! Let's start ${chosen} class 📘`);
-      setTimeout(() => {
-        addMessage(
-          "bot",
-          `Ask me any ${chosen} question or topic you’d like to discuss.`
-        );
-      }, 800);
-    } else {
+    setTimeout(() => {
       addMessage(
         "bot",
-        `Hmm, I didn’t catch that. Please choose one of the subjects: ${subjects.join(", ")}`
+        "Remember: coding is all about practice and patience. What would you like to work on today — JavaScript, HTML, or something else?"
       );
-    }
+    }, 1200);
     return;
   }
 
-  // Normal conversation after subject is chosen
-  addMessage("bot", "✏️ Thinking...");
+  addMessage("bot", "💭 Let me think...");
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: `(${currentSubject}) ${message}`,
+        message: `Student: ${studentName} asked: ${message}`,
         studentName,
       }),
     });
     const data = await res.json();
-    chatBox.lastChild.remove(); // remove "Thinking..."
+    chatBox.lastChild.remove(); // remove "thinking" message
     addMessage("bot", data.reply);
   } catch (err) {
     chatBox.lastChild.remove();
-    addMessage("bot", "⚠️ Sorry, something went wrong.");
+    addMessage("bot", "⚠️ Sorry, something went wrong while processing your question.");
   }
 });
 
@@ -74,4 +77,4 @@ function addMessage(sender, text) {
   msg.textContent = text;
   chatBox.appendChild(msg);
   chatBox.scrollTop = chatBox.scrollHeight;
-  }
+                          }
