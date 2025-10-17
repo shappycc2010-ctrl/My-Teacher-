@@ -1,48 +1,42 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mr. Kelly — Smart Lessons</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mr. Kelly – Your AI Teacher</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="title">👨‍🏫 Mr. Kelly — Smart Lessons</div>
-      <div class="controls">
-        <input id="studentName" placeholder="Your name" />
-        <select id="subjectSelect">
-          <option value="Web development">Web Development</option>
-          <option value="HTML">HTML</option>
-          <option value="CSS">CSS</option>
-          <option value="JavaScript">JavaScript</option>
-          <option value="Math">Math</option>
-          <option value="Science">Science</option>
-        </select>
-        <select id="levelSelect">
-          <option value="beginner">Beginner</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
-        </select>
-        <button id="startLessonBtn">Start Lesson</button>
-      </div>
-    </header>
+  <div class="container">
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="active">
+      <h1 class="title">👋 Hi, I’m <span>Mr. Kelly</span></h1>
+      <p class="subtitle">Your friendly AI teacher — choose a subject to begin!</p>
 
-    <section id="lessonArea" class="lesson-area">
-      <div id="lessonHeader" class="lesson-header"></div>
-      <div id="lessonContent" class="lesson-content"></div>
-      <div id="quizArea" class="quiz-area" style="display:none"></div>
+      <div class="subjects">
+        <div class="card" data-subject="Math">📐 Math</div>
+        <div class="card" data-subject="Science">🧪 Science</div>
+        <div class="card" data-subject="Web Development">💻 Web Dev</div>
+        <div class="card" data-subject="History">📜 History</div>
+        <div class="card" data-subject="English">📚 English</div>
+      </div>
     </section>
 
-    <footer class="footer">
-      <button id="nextStepBtn" disabled>Next Step ▶️</button>
-      <button id="askBtn">Ask Question ❓</button>
-      <button id="progressBtn">View Progress 📊</button>
-      <div id="status" class="status">Ready</div>
-    </footer>
-  </main>
+    <!-- CHAT CLASSROOM -->
+    <section id="classroom">
+      <header>
+        <button id="backBtn">← Back</button>
+        <h2 id="subjectTitle">Learning</h2>
+      </header>
+
+      <div id="chatBox" class="chat-box"></div>
+
+      <form id="chatForm">
+        <input type="text" id="messageInput" placeholder="Ask Mr. Kelly anything..." required />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </div>
 
   <script src="script.js"></script>
-</body>
-  </html>
+</body
