@@ -1,48 +1,249 @@
+// ai.js
 import express from "express";
+import fs from "fs";
+import path from "path";
 import OpenAI from "openai";
 
 const router = express.Router();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const DATA_FILE = path.resolve("./students.json");
 
-router.post("/api/chat", async (req, res) => {
+function readData() {
   try {
-    const { message, studentName, mode, topic } = req.body;
+    if (!fs.existsSync(DATA_FILE)) return {};
+    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
+  } catch (e) {
+    console.error("readData error:", e);
+    return {};
+  }
+}
+function writeData(obj) {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error("writeData error:", e);
+  }
+}
 
-    // Choose behavior based on mode
-    let systemPrompt = "";
+const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
-    switch (mode) {
-      case "lesson":
-        systemPrompt = `You are Mr. Kelly, a warm and intelligent AI teacher. 
-        Teach ${studentName} about ${topic || "any topic"} in a fun and clear way.
-        Use simple examples and break concepts into easy steps.`;
-        break;
-      case "quiz":
-        systemPrompt = `You are Mr. Kelly, the AI quiz master. 
-        Give ${studentName} a quiz question about ${topic || "general knowledge"}.
-        After their answer, give feedback and the correct explanation.`;
-        break;
-      case "motivation":
-        systemPrompt = `You are Mr. Kelly, a motivational teacher. 
-        Encourage ${studentName} to study hard and stay positive.`;
-        break;
-      default:
-        systemPrompt = `You are Mr. Kelly, a helpful AI teacher who can chat, teach, or quiz.`;
+// Utility to call OpenAI
+async function askOpenAI(system, user, opts = {}) {
+  const messages = [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+  const params = Object.assign({ model: MODEL, messages }, opts);
+  const completion = await openai.chat.completions.create(params);
+  return completion.choices[0].message.content;
+}
+
+/**
+ * API: POST /api/lesson/start
+ * body: { studentName, subject, level } 
+ * Response: { planId, summary, stepsCount, plan }
+ *
+ * This creates and stores a step-by-step lesson plan for the student.
+ */
+router.post("/api/lesson/start", async (req, res) => {
+  try {
+    const { studentName = "Student", subject = "Web Development", level = "beginner" } = req.body;
+    const data = readData();
+    if (!data[studentName]) data[studentName] = { history: [], lessons: [], quizzes: [] };
+
+    // Ask OpenAI to produce a short plan (3-6 steps) in JSON form
+    const system = "You are Mr. Kelly, a concise teacher. Output a JSON object with 'title', 'summary', 'weeks' or 'steps' where steps is an array of { stepNumber, title, content, shortQuiz } . Keep it short.";
+    const userPrompt = `Create a ${level}-level lesson plan on "${subject}" with 3-6 steps. Each step should include:
+- stepNumber
+- title
+- a short instruction (1-2 sentences)
+- a one-question shortQuiz (question + 4 options A-D), do NOT include the answer key.
+Return strict JSON like: { "title": "...", "summary": "...", "steps": [ { "stepNumber":1, "title":"", "content":"", "shortQuiz":"Q..." }, ... ] }`;
+
+    const planText = await askOpenAI(system, userPrompt, { temperature: 0.2 });
+
+    // try parse JSON (model instructed to return JSON)
+    let planObj;
+    try {
+      planObj = JSON.parse(planText.match(/\{[\s\S]*\}/)?.[0] || planText);
+    } catch (err) {
+      // fallback: wrap text into simple plan
+      planObj = {
+        title: subject,
+        summary: planText.slice(0, 300),
+        steps: [
+          { stepNumber: 1, title: "Intro", content: planText, shortQuiz: "" }
+        ]
+      };
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `${studentName}: ${message}` }
-      ],
-    });
+    const lessonRecord = {
+      id: Date.now(),
+      subject,
+      level,
+      createdAt: new Date().toISOString(),
+      plan: planObj,
+      currentStep: 0,
+      completed: false
+    };
 
-    res.json({ reply: completion.choices[0].message.content });
+    data[studentName].lessons.push(lessonRecord);
+    writeData(data);
+
+    res.json({
+      planId: lessonRecord.id,
+      summary: planObj.summary || "",
+      stepsCount: (planObj.steps || []).length,
+      plan: planObj
+    });
   } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "AI response failed." });
+    console.error("lesson/start error:", err);
+    res.status(500).json({ error: "Failed to create lesson" });
   }
 });
+
+/**
+ * API: POST /api/lesson/next
+ * body: { studentName, planId }
+ * Response: { stepNumber, title, content, shortQuiz, finished }
+ *
+ * Returns the next step. If steps exhausted, returns finished:true and triggers quiz start.
+ */
+router.post("/api/lesson/next", (req, res) => {
+  try {
+    const { studentName = "Student", planId } = req.body;
+    const data = readData();
+    const student = data[studentName];
+    if (!student) return res.status(404).json({ error: "Student not found" });
+
+    const lesson = (student.lessons || []).find(l => l.id === planId);
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    const steps = lesson.plan.steps || [];
+    lesson.currentStep = (lesson.currentStep || 0) + 1;
+
+    if (lesson.currentStep > steps.length) {
+      // finished lesson
+      lesson.completed = true;
+      writeData(data);
+      return res.json({ finished: true, message: "Lesson completed. Starting summary & short quiz." });
+    }
+
+    const step = steps[lesson.currentStep - 1];
+    // append to history
+    student.history.push({ time: new Date().toISOString(), event: `viewed-step-${step.stepNumber}`, title: step.title });
+    writeData(data);
+
+    res.json({ finished: false, stepNumber: step.stepNumber, title: step.title, content: step.content, shortQuiz: step.shortQuiz || "" });
+  } catch (err) {
+    console.error("lesson/next error:", err);
+    res.status(500).json({ error: "Failed to retrieve next step" });
+  }
+});
+
+/**
+ * API: POST /api/lesson/ask
+ * body: { studentName, planId, question }
+ * Response: { reply }
+ *
+ * Student can ask a question about current lesson step — AI provides explanation.
+ */
+router.post("/api/lesson/ask", async (req, res) => {
+  try {
+    const { studentName = "Student", planId, question } = req.body;
+    const data = readData();
+    const student = data[studentName];
+    if (!student) return res.status(404).json({ error: "Student not found" });
+    const lesson = (student.lessons || []).find(l => l.id === planId);
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    // build context: last two steps content
+    const steps = lesson.plan.steps || [];
+    const currentIndex = Math.max(0, (lesson.currentStep || 1) - 1);
+    const contextParts = [];
+    if (steps[currentIndex]) contextParts.push(`Current step: ${steps[currentIndex].title}\n${steps[currentIndex].content}`);
+    if (steps[currentIndex - 1]) contextParts.push(`Previous step: ${steps[currentIndex - 1].title}\n${steps[currentIndex - 1].content}`);
+
+    const system = "You are Mr. Kelly, the AI teacher. Provide a clear helpful explanation targeted to the student's level and reference the current lesson context.";
+    const userPrompt = `Context:\n${contextParts.join("\n\n")}\n\nStudent question: ${question}\nProvide a concise answer with an example if helpful.`;
+
+    const reply = await askOpenAI(system, userPrompt, { temperature: 0.5 });
+
+    // save to history
+    student.history.push({ time: new Date().toISOString(), event: "question", question, reply });
+    writeData(data);
+
+    res.json({ reply });
+  } catch (err) {
+    console.error("lesson/ask error:", err);
+    res.status(500).json({ error: "Failed to answer question" });
+  }
+});
+
+/**
+ * API: POST /api/quiz/grade
+ * body: { studentName, planId, questionText, selectedOption }
+ * Response: { correct: bool, explanation, score }
+ *
+ * Grades a single question (based on either stored quiz or AI judgement).
+ */
+router.post("/api/quiz/grade", async (req, res) => {
+  try {
+    const { studentName = "Student", planId, questionText, selectedOption } = req.body;
+    const data = readData();
+    const student = data[studentName];
+    if (!student) return res.status(404).json({ error: "Student not found" });
+
+    // Ask OpenAI whether selected option is correct, give feedback and numeric score 0-100
+    const system = "You are Mr. Kelly grading a student's multiple choice answer. Tell whether it's correct, give the correct answer, a short explanation, and a numeric score 0-100.";
+    const userPrompt = `Question: ${questionText}\nStudent's answer: ${selectedOption}\nRespond JSON: {"correct": true/false, "correctAnswer":"A/B/C/D", "explanation":"...", "score": number }`;
+
+    const gradingText = await askOpenAI(system, userPrompt, { temperature: 0 });
+    let gradeObj;
+    try {
+      gradeObj = JSON.parse(gradingText.match(/\{[\s\S]*\}/)?.[0] || gradingText);
+    } catch (e) {
+      // fallback: parse heuristically
+      const correct = gradingText.toLowerCase().includes("correct");
+      const score = correct ? 100 : 0;
+      gradeObj = { correct, correctAnswer: "A", explanation: gradingText, score };
+    }
+
+    // store result in student's quizzes
+    if (!student.quizzes) student.quizzes = [];
+    student.quizzes.push({ planId, questionText, selectedOption, ...gradeObj, date: new Date().toISOString() });
+    writeData(data);
+
+    res.json(gradeObj);
+  } catch (err) {
+    console.error("quiz/grade error:", err);
+    res.status(500).json({ error: "Failed to grade answer" });
+  }
+});
+
+/**
+ * API: GET /api/progress/:studentName
+ * returns student's lessons and quiz summary
+ */
+router.get("/api/progress/:studentName", (req, res) => {
+  try {
+    const { studentName } = req.params;
+    const data = readData();
+    const student = data[studentName] || { lessons: [], quizzes: [], history: [] };
+
+    // compute simple metrics
+    const lessonsCompleted = (student.lessons || []).filter(l => l.completed).length;
+    const lessonCount = (student.lessons || []).length;
+    const avgScore = (student.quizzes || []).length ? Math.round((student.quizzes.reduce((s, q) => s + (q.score || 0), 0) / student.quizzes.length) * 10) / 10 : null;
+
+    res.json({ studentName, lessonCount, lessonsCompleted, avgScore, lessons: student.lessons || [], quizzes: student.quizzes || [], history: student.history || [] });
+  } catch (err) {
+    console.error("progress error:", err);
+    res.status(500).json({ error: "Failed to get progress" });
+  }
+});
+
+/* small health route */
+router.get("/api/health", (req, res) => res.json({ ok: true, now: new Date().toISOString() }));
 
 export default router;
