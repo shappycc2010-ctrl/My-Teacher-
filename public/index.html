@@ -1,32 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mr. Kelly – Your Coding Teacher</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="container">
-    <section id="classroom" class="active">
-      <header>
-        <h2>💻 Mr. Kelly’s Coding Class</h2>
-      </header>
+<h2>💻 Mr. Kelly's Coding Class</h2>
+<p>Welcome! Please pay $5 to unlock today's lesson.</p>
 
-      <div id="chatBox" class="chat-box"></div>
+<button id="stripe">Pay with Stripe</button>
+<button id="paystack">Pay with Paystack</button>
+<button id="flutterwave">Pay with Flutterwave</button>
 
-      <form id="chatForm">
-        <input
-          type="text"
-          id="messageInput"
-          placeholder="Ask a coding question or greet Mr. Kelly..."
-          required
-        />
-        <button type="submit">Send</button>
-      </form>
-    </section>
-  </div>
+<script>
+async function startPayment(type) {
+  const email = prompt("Enter your email:");
+  const name = prompt("Enter your name:");
+  const res = await fetch(`/api/payment/${type}-pay`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, name })
+  });
+  const data = await res.json();
+  if (data.url) window.location.href = data.url;
+}
 
-  <script src="script.js"></script>
-</body>
-                                           </html>
+document.getElementById("stripe").onclick = () => startPayment("stripe");
+document.getElementById("paystack").onclick = () => startPayment("paystack");
+document.getElementById("flutterwave").onclick = () => startPayment("flutterwave");
+</script>
