@@ -1,62 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mr. Kelly Focus Mode</title>
-  <style>
-    body {
-      background-color: #0d0d0d;
-      color: #e0e0e0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      text-align: center;
-    }
-    h1 {
-      font-size: 2rem;
-      color: #00aaff;
-    }
-    button {
-      margin-top: 2rem;
-      background: #00aaff;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #008ecc;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Mr. Kelly’s Class</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #0a0a0a;
+    color: white;
+    font-family: "Poppins", sans-serif;
+  }
+
+  /* School bus */
+  .bus {
+    position: absolute;
+    bottom: 80px;
+    left: -200px;
+    width: 180px;
+    animation: drive 5s linear forwards;
+  }
+
+  @keyframes drive {
+    from { left: -200px; }
+    to { left: 110%; }
+  }
+
+  /* Mr. Kelly intro */
+  .intro {
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+    animation: fadeIn 2s ease forwards;
+    animation-delay: 5s;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  .avatar {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: url("https://cdn-icons-png.flaticon.com/512/6997/6997662.png") center/cover no-repeat;
+    margin-bottom: 20px;
+  }
+
+  #typingText {
+    font-size: 1.2rem;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  #subscribeBtn {
+    display: none;
+    margin-top: 30px;
+    background: #00aaff;
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  #subscribeBtn:hover {
+    background: #008ecc;
+  }
+</style>
 </head>
 <body>
-  <h1 id="message">Welcome back to class. Phones are now in focus mode — no distractions. Let’s get ready to learn coding.</h1>
-  <button onclick="exitFocus()">Exit Focus Mode</button>
 
-  <script>
-    // Play Mr. Kelly's voice
-    window.onload = () => {
-      const speech = new SpeechSynthesisUtterance(
-        "Welcome back to class. Phones are now in focus mode — no distractions. Let's get ready to learn coding."
-      );
-      speech.rate = 1;
-      speech.pitch = 1.1;
-      speech.volume = 1;
-      speech.lang = "en-US";
-      speechSynthesis.speak(speech);
-    };
+<img src="https://cdn-icons-png.flaticon.com/512/1048/1048311.png" class="bus" alt="School Bus">
 
-    function exitFocus() {
-      alert("Focus Mode exited. Returning to normal mode...");
-      window.location.href = "/"; // go back to homepage or dashboard
+<div class="intro">
+  <div class="avatar"></div>
+  <div id="typingText"></div>
+  <button id="subscribeBtn" onclick="subscribe()">Subscribe to Class</button>
+</div>
+
+<script>
+  // Text typing animation
+  const text = "Welcome! I am Mr. Kelly, your one and only teacher. I was created by Shappycc (A.K.A Bolu) to teach the world about coding. I would love to have you in my class — please subscribe to partake.";
+  const typingText = document.getElementById("typingText");
+  const subscribeBtn = document.getElementById("subscribeBtn");
+
+  function typeWriter(text, i = 0) {
+    if (i < text.length) {
+      typingText.innerHTML += text.charAt(i);
+      setTimeout(() => typeWriter(text, i + 1), 50);
+    } else {
+      subscribeBtn.style.display = "inline-block";
     }
-  </script>
+  }
+
+  setTimeout(() => typeWriter(text), 5500);
+
+  function subscribe() {
+    alert("Redirecting to subscription page...");
+    window.location.href = "/subscribe"; // You can change this later
+  }
+</script>
+
 </body>
 </html>
