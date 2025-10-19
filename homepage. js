@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mr. Kelly AI Classroom</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #0a0a0a;
+      color: white;
+      font-family: "Poppins", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      transition: background-color 1s;
+    }
+    .message-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 20px 30px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 25px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="message-box">
+    <h2>👨‍🏫 Mr. Kelly says:</h2>
+    <p>“Class is in session. Please silence your device so we can focus.”</p>
+    <button id="startClass">Enter Focus Mode</button>
+  </div>
+
+  <script>
+    document.getElementById("startClass").addEventListener("click", async () => {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+      document.body.style.backgroundColor = "#000";
+      document.querySelector(".message-box").innerHTML = `
+        <h2>🧠 Welcome to class!</h2>
+        <p>Mr. Kelly: "Let's continue from where we stopped last time. Open your mind and let's code!"</p>
+      `;
+      // Optionally redirect to the AI chat
+      // window.location.href = "/classroom";
+    });
+  </script>
+</body>
+</html>
