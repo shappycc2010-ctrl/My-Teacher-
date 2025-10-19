@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Welcome to Mr. Kelly’s Class</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mr. Kelly AI – Coding Class</title>
 <style>
   body {
     margin: 0;
+    background-color: #0d0d0d;
     overflow: hidden;
-    background: #0a0a0a;
-    color: white;
     font-family: "Poppins", sans-serif;
+    color: #ffffff;
   }
 
-  /* School bus */
+  /* School bus animation */
   .bus {
     position: absolute;
-    bottom: 80px;
-    left: -200px;
-    width: 180px;
-    animation: drive 5s linear forwards;
+    bottom: 100px;
+    left: -250px;
+    width: 200px;
+    animation: drive 6s linear forwards;
   }
 
   @keyframes drive {
-    from { left: -200px; }
+    from { left: -250px; }
     to { left: 110%; }
   }
 
-  /* Mr. Kelly intro */
+  /* Intro container */
   .intro {
     opacity: 0;
     display: flex;
@@ -37,74 +37,83 @@
     height: 100vh;
     text-align: center;
     animation: fadeIn 2s ease forwards;
-    animation-delay: 5s;
+    animation-delay: 6s;
   }
 
   @keyframes fadeIn {
     to { opacity: 1; }
   }
 
+  /* Mr. Kelly avatar */
   .avatar {
-    width: 140px;
-    height: 140px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
     background: url("https://cdn-icons-png.flaticon.com/512/6997/6997662.png") center/cover no-repeat;
     margin-bottom: 20px;
   }
 
+  /* Typing text */
   #typingText {
     font-size: 1.2rem;
-    max-width: 600px;
+    max-width: 650px;
     line-height: 1.6;
+    color: #f2f2f2;
   }
 
+  /* Subscribe button */
   #subscribeBtn {
     display: none;
-    margin-top: 30px;
+    margin-top: 35px;
     background: #00aaff;
-    color: white;
+    color: #fff;
     border: none;
-    padding: 12px 28px;
+    padding: 12px 30px;
     border-radius: 10px;
     font-size: 1rem;
     cursor: pointer;
+    transition: 0.3s;
   }
 
   #subscribeBtn:hover {
-    background: #008ecc;
+    background: #0088cc;
   }
 </style>
 </head>
 <body>
 
+<!-- 🚌 School bus drives across -->
 <img src="https://cdn-icons-png.flaticon.com/512/1048/1048311.png" class="bus" alt="School Bus">
 
+<!-- 👨‍🏫 Mr. Kelly intro -->
 <div class="intro">
   <div class="avatar"></div>
   <div id="typingText"></div>
-  <button id="subscribeBtn" onclick="subscribe()">Subscribe to Class</button>
+  <button id="subscribeBtn" onclick="subscribe()">Subscribe to Join Class</button>
 </div>
 
 <script>
-  // Text typing animation
-  const text = "Welcome! I am Mr. Kelly, your one and only teacher. I was created by Shappycc (A.K.A Bolu) to teach the world about coding. I would love to have you in my class — please subscribe to partake.";
+  // 🧠 Mr. Kelly’s welcome text
+  const text = "Welcome! I am Mr. Kelly, your one and only teacher. I was created by Shappycc (A.K.A Bolu) to teach the rest of the world about coding. I will love to have you in my class — please subscribe to partake...";
   const typingText = document.getElementById("typingText");
   const subscribeBtn = document.getElementById("subscribeBtn");
 
+  // Typewriter animation
   function typeWriter(text, i = 0) {
     if (i < text.length) {
       typingText.innerHTML += text.charAt(i);
-      setTimeout(() => typeWriter(text, i + 1), 50);
+      setTimeout(() => typeWriter(text, i + 1), 45);
     } else {
       subscribeBtn.style.display = "inline-block";
     }
   }
 
-  setTimeout(() => typeWriter(text), 5500);
+  // Delay typing until bus drives off
+  setTimeout(() => typeWriter(text), 6500);
 
   function subscribe() {
     alert("Redirecting to subscription page...");
-    window.location.href = "/subscribe"; // You can change this later
+    window.location.href = "/subscribe"; // replace with your actual payment/lesson unlock route
   }
 </script>
 
