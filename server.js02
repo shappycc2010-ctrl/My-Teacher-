@@ -8,7 +8,8 @@ const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
-
+import paymentRouter from "./payment.js";
+app.use("/", paymentRouter);
 app.use("/", aiRouter);
 
 app.get("/", (req, res) => {
