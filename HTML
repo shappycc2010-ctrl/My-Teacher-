@@ -132,3 +132,12 @@ document.getElementById("subscribeBtn").addEventListener("click", async () => {
   window.location.href = data.paymentUrl; // Redirect to Coinbase checkout
 });
 </script>
+<button id="payBtn">Pay with Tonkeeper</button>
+
+<script>
+document.getElementById("payBtn").addEventListener("click", async () => {
+  const res = await fetch("/api/create-payment", { method: "POST" });
+  const data = await res.json();
+  window.location.href = data.paymentUrl; // takes them to Tonkeeper payment
+});
+</script>
