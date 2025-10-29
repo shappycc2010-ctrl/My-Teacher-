@@ -131,3 +131,24 @@ window.addEventListener('load', () => {
     showLesson();
   }, 1400); // give big WELCOME a moment
 });
+function typeText(element, text, speed = 50, callback) {
+  let index = 0;
+  const interval = setInterval(() => {
+    element.textContent += text.charAt(index);
+    index++;
+    if (index === text.length) {
+      clearInterval(interval);
+      element.style.borderRight = "none"; // stop cursor blink
+      if (callback) callback();
+    }
+  }, speed);
+}
+
+window.onload = function() {
+  const message = "Hello there! 👋 I’m Mr. Kelly, your coding teacher. Today we’ll learn how the web was created...";
+  const output = document.querySelector(".typewriter");
+
+  typeText(output, message, 45, () => {
+    document.querySelector("#continue-btn").style.display = "block";
+  });
+};
