@@ -14,3 +14,19 @@
   caret-color: transparent;      /* hide blinking text cursor */
   background: none;              /* remove blue background */
 }
+.typed-text, .typewriter {
+  background: none !important;       /* remove any background */
+  user-select: none !important;      /* disable text selection */
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  caret-color: transparent !important; /* hide default cursor */
+}
+
+.typed-text span {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: inherit !important;
+}
