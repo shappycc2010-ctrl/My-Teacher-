@@ -119,3 +119,16 @@
 
 </body>
 </html>
+<button id="subscribeBtn">Subscribe Now</button>
+
+<script>
+document.getElementById("subscribeBtn").addEventListener("click", async () => {
+  const res = await fetch("/api/create-payment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ studentName: "Student123" })
+  });
+  const data = await res.json();
+  window.location.href = data.paymentUrl; // Redirect to Coinbase checkout
+});
+</script>
