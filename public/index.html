@@ -1,31 +1,44 @@
-<h2>💻 Welcome to Mr. Kelly's Coding Class</h2>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mr. Kelly — Lesson 1: The Creation of the Web</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="welcomeScreen" class="center-screen">
+    <h1 id="bigWelcome">WELCOME</h1>
+  </div>
 
-<div id="teacher-message">
-  <p id="kelly-intro">
-    👋 Hello! I’m <strong>Mr. Kelly</strong>, your friendly AI coding teacher.<br>
-    I will want you to be in my class — we’re doing exciting coding lessons today! 🚀
-  </p>
-</div>
+  <main id="classroom" class="hidden">
+    <aside class="left-pane">
+      <div id="avatar" class="avatar"></div>
+      <div class="teacher-name">Mr. Kelly</div>
+    </aside>
 
-<p>Please choose a payment method to join my class:</p>
-<button id="stripe">Pay with Stripe</button>
-<button id="paystack">Pay with Paystack</button>
-<button id="flutterwave">Pay with Flutterwave</button>
+    <section class="lesson-area">
+      <div id="lessonHeader">
+        <h2>Lesson 1 — The Creation of the Web</h2>
+        <div class="subtle">Typed by Mr. Kelly — read along and click "Continue" when ready</div>
+      </div>
 
-<script>
-async function startPayment(type) {
-  const email = prompt("Enter your email:");
-  const name = prompt("Enter your name:");
-  const res = await fetch(`/api/payment/${type}-pay`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, name })
-  });
-  const data = await res.json();
-  if (data.url) window.location.href = data.url;
-}
+      <article id="lessonBox" class="lesson-box">
+        <div id="typedText" class="typed-text"></div>
+      </article>
 
-document.getElementById("stripe").onclick = () => startPayment("stripe");
-document.getElementById("paystack").onclick = () => startPayment("paystack");
-document.getElementById("flutterwave").onclick = () => startPayment("flutterwave");
-</script>
+      <div class="controls">
+        <button id="continueBtn" class="btn">Continue Lesson</button>
+        <button id="restartBtn" class="btn ghost">Restart Lesson</button>
+      </div>
+
+      <div id="endCta" class="end-cta hidden">
+        <p class="end-msg">You did great today! Want more lessons like this?</p>
+        <button id="subscribeBtn" class="btn">Subscribe to continue</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
