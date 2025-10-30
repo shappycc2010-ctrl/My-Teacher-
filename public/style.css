@@ -113,9 +113,9 @@ body{
 
 .mr-kelly-box {
   background-color: #121212;
-  padding: 20px;
+  padding: 0px;
   border-radius: 12px;
-  box-shadow: 0 0 10px #00d1ff55;
+  box-shadow: 0 0 0px #00d1ff55;
   width: 80%;
   max-width: 600px;
   margin: 40px auto;
@@ -128,3 +128,12 @@ body{
   border-radius: 50%;
   margin-bottom: 10px;
 }
+#offlineGameContainer h2 {
+  animation: blink 1.5s infinite alternate;
+  color: cyan;
+}
+
+@keyframes blink {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+     }
