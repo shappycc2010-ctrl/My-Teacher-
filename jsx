@@ -72,3 +72,21 @@ function TypewriterMessage({ name }) {
     </div>
   );
                        }
+import Lottie from "lottie-react";
+import teacherAnimation from "./mrkelly-male.json"; // animated male avatar (Lottie file)
+
+export default function MrKellyAvatar({ isSpeaking }) {
+  return (
+    <div className="relative w-40 h-40">
+      <Lottie
+        animationData={teacherAnimation}
+        loop={isSpeaking}
+        autoplay={isSpeaking}
+        className="rounded-full border-4 border-blue-500 shadow-lg"
+      />
+      <div className="absolute bottom-0 right-0 bg-green-500 text-xs px-2 py-1 rounded-full">
+        {isSpeaking ? "Speaking..." : "Idle"}
+      </div>
+    </div>
+  );
+        }
