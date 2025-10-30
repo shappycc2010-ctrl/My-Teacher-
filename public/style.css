@@ -70,8 +70,8 @@ body{
 .typed-text{font-size:1.05rem;line-height:1.7;white-space:pre-wrap;color:#dcefff}
 
 /* cursor style appended */
-.typing-cursor{display:inline-block;width:8px;height:20px;background:var(--accent);vertical-align:middle;margin-left:6px;animation:blink 1s steps(2) infinite}
-@keyframes blink {50%{opacity:0}}
+.typing-cursor{display:inline-block;width:0px;height:0px;background:var(--accent);vertical-align:middle;margin-left:0px;animation:blink 1s steps(2) infinite}
+@keyframes blink {0%{opacity:0}}
 
 /* controls */
 .controls{display:flex;gap:10px;margin-top:16px}
@@ -118,7 +118,7 @@ body{
   box-shadow: 0 0 0px #00d1ff55;
   width: 80%;
   max-width: 600px;
-  margin: 40px auto;
+  margin: 25px auto;
   color: white;
   text-align: left;
 }
