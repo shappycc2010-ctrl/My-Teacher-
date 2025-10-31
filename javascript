@@ -11,3 +11,4 @@ function typeWriter() {
   }
 }
 window.onload = typeWriter;
+const now paymant API = process.env. NOWPAYMENT_API_KEY=;
