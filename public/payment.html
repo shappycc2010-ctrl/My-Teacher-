@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mr. Kelly Payment Portal</title>
+  <style>
+    body { 
+      background: #0b0b0b; 
+      color: white; 
+      font-family: 'Poppins', sans-serif; 
+      text-align: center;
+      padding: 50px;
+    }
+    .card {
+      background: #111; 
+      padding: 30px; 
+      border-radius: 16px; 
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      max-width: 500px;
+      margin: auto;
+    }
+    input, button {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      background: #00ff88;
+      color: black;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>💰 Mr. Kelly’s Coding Class</h1>
+    <p>Please pay <b>₦15,000 (≈ $10)</b> to join:</p>
+    <p><b>Bank:</b> OPay</p>
+    <p><b>Account:</b> 9168860108</p>
+    <p><b>Name:</b> Elizabeth Abifarin</p>
+
+    <form id="paymentForm" enctype="multipart/form-data">
+      <label>Upload Payment Proof:</label><br>
+      <input type="file" name="proof" required />
+      <button type="submit">Submit Payment Proof</button>
+    </form>
+
+    <p id="responseMsg"></p>
+  </div>
+
+  <script>
+    document.getElementById("paymentForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch("/api/payment-proof", { method: "POST", body: formData });
+      const data = await res.json();
+      document.getElementById("responseMsg").textContent = data.message;
+    });
+  </script>
+</body>
+        </html>
