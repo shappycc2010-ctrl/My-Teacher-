@@ -1,18 +1,22 @@
-<!DOCTYPE html>
-<html>
-  <body>
-    <h2>Buy a Mr. Kelly Premium Lesson ($5)</h2>
-    <button id="payBtn">Pay Now</button>
+=================================
+💰 Mr. Kelly Payment Portal
+=================================
 
-    <script>
-      document.getElementById("payBtn").onclick = async () => {
-        const res = await fetch("/api/payment/create-checkout-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        const data = await res.json();
-        window.location.href = data.url;
-      };
-    </script>
-  </body>
-</html>
+Hello student 👋  
+
+Please make a one-time payment to join my coding class.  
+Once payment is confirmed, I’ll unlock all lessons for you!
+
+Bank Name: OPay  
+Account Number: 9168860108  
+Account Holder: Elizabeth Abifarin  
+Amount: ₦15,000 (≈ $10 USD)
+
+[Upload Proof of Payment]
+📁 Choose file...
+
+[Submit Payment Proof]
+
+=================================
+Mr. Kelly says: “I’ll be waiting for you in class!”
+=================================
