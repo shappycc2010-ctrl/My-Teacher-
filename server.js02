@@ -1,26 +1,59 @@
 import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
+import aiRouter from "./ai.js"; // Your AI chat route
 
-const router = express.Router();
+const app = express();
 
-// Configure file uploads
-const upload = multer({ dest: "uploads/" });
+// ✅ Middleware
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static("public")); // to serve payment.html or images
 
-// Handle payment proof upload
-router.post("/api/payment-proof", upload.single("proof"), (req, res) => {
-  const file = req.file;
-  if (!file) {
-    return res.status(400).json({ message: "No file uploaded" });
+// ✅ Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = "./uploads";
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
+
+// ✅ API route for chat
+app.use("/", aiRouter);
+
+// ✅ API for handling payment proof upload
+app.post("/api/payment-proof", upload.single("proof"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded." });
   }
 
-  // In a real setup, you’d store proof in a database or email it to admin
-  console.log(`Payment proof received: ${file.originalname}`);
-
   res.json({
-    message:
-      "✅ Thank you! Mr. Kelly has received your payment proof. He’ll verify it shortly and unlock your lessons.",
+    message: "✅ Payment proof received successfully! Mr. Kelly will review your submission.",
+    file: req.file.filename
   });
 });
 
-export default router;import paymentRouter from "./payment.js";
-app.use("/", paymentRouter);
+// ✅ Serve payment page
+app.get("/payment", (req, res) => {
+  res.sendFile(path.resolve("payment.html"));
+});
+
+// ✅ Default route
+app.get("/", (req, res) => {
+  res.send("✅ Mr. Kelly AI server is running fine!");
+});
+
+// ✅ Start server
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
