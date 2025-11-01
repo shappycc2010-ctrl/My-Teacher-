@@ -23,3 +23,5 @@ router.post("/api/payment-proof", upload.single("proof"), (req, res) => {
 });
 
 export default router;
+import paymentRouter from "./payment.js";
+app.use("/", paymentRouter);
