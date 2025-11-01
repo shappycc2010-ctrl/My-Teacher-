@@ -13,3 +13,7 @@
     "body-parser": "^1.20.2"
   }
 }
+"dependencies": {
+  "multer": "^1.4.5-lts.1",
+  ...
+}
