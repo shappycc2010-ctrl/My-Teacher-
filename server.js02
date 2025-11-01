@@ -1,20 +1,26 @@
-import dotenv from "dotenv";dotenv.config();
 import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
-import { aiRouter } from "./ai.js";
-import paymentRouter from "./payment.js";app.use("/", paymentRouter);
-const app = express();
+import multer from "multer";
 
-app.use(cors());
-app.use(bodyParser.json());
-import paymentRouter from "./payment.js";
-app.use("/", paymentRouter);
-app.use("/", aiRouter);
+const router = express.Router();
 
-app.get("/", (req, res) => {
-  res.send("✅ Mr. Kelly AI server is running fine!");
+// Configure file uploads
+const upload = multer({ dest: "uploads/" });
+
+// Handle payment proof upload
+router.post("/api/payment-proof", upload.single("proof"), (req, res) => {
+  const file = req.file;
+  if (!file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  // In a real setup, you’d store proof in a database or email it to admin
+  console.log(`Payment proof received: ${file.originalname}`);
+
+  res.json({
+    message:
+      "✅ Thank you! Mr. Kelly has received your payment proof. He’ll verify it shortly and unlock your lessons.",
+  });
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+export default router;import paymentRouter from "./payment.js";
+app.use("/", paymentRouter);
