@@ -1,19 +1,25 @@
 import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
-import aiRouter from "./ai.js"; // ✅ Correct import
+import multer from "multer";
 
-const app = express();
+const router = express.Router();
 
-app.use(cors());
-app.use(bodyParser.json());
+// Configure file uploads
+const upload = multer({ dest: "uploads/" });
 
-// ✅ Use the router properly
-app.use(express.static("public"));
+// Handle payment proof upload
+router.post("/api/payment-proof", upload.single("proof"), (req, res) => {
+  const file = req.file;
+  if (!file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
 
-app.get("/", (req, res) => {
-  res.send("✅ Mr. Kelly AI server is running fine!");
+  // In a real setup, you’d store proof in a database or email it to admin
+  console.log(`Payment proof received: ${file.originalname}`);
+
+  res.json({
+    message:
+      "✅ Thank you! Mr. Kelly has received your payment proof. He’ll verify it shortly and unlock your lessons.",
+  });
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+export default router;
